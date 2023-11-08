@@ -23,6 +23,7 @@ namespace MongoDB\Bundle\DependencyInjection\Compiler;
 use MongoDB\Bundle\DataCollector\DriverEventSubscriber;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
@@ -40,7 +41,13 @@ final class DataCollectorPass implements CompilerPassInterface
         // Add a subscriber to each client to collect driver events, and register the client to the data collector.
         foreach ($container->findTaggedServiceIds('mongodb.client', true) as $clientId => $attributes) {
             $subscriberId = sprintf('%s.subscriber', $clientId);
-            $container->setDefinition($subscriberId, new Definition(DriverEventSubscriber::class));
+            $subscriber = new Definition(DriverEventSubscriber::class);
+            $subscriber->setArguments([
+                $attributes[0]['name'] ?? $clientId,
+                new Reference('debug.stopwatch', ContainerInterface::NULL_ON_INVALID_REFERENCE),
+            ]);
+            $container->setDefinition($subscriberId, $subscriber);
+
             $container->getDefinition($clientId)->addMethodCall('addSubscriber', [new Reference($subscriberId)]);
             $dataCollector->addMethodCall('addClient', [
                 $attributes[0]['name'] ?? $clientId,

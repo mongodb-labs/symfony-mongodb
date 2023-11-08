@@ -20,11 +20,11 @@ declare(strict_types=1);
 
 namespace MongoDB\Bundle\DataCollector;
 
-use MongoDB\Client;
 use MongoDB\Driver\Monitoring\CommandFailedEvent;
 use MongoDB\Driver\Monitoring\CommandStartedEvent;
 use MongoDB\Driver\Monitoring\CommandSubscriber;
 use MongoDB\Driver\Monitoring\CommandSucceededEvent;
+use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Contracts\Service\ResetInterface;
 
 /** @internal */
@@ -34,10 +34,12 @@ final class DriverEventSubscriber implements CommandSubscriber, ResetInterface
      * @var list<CommandFailedEvent|CommandStartedEvent|CommandSucceededEvent>
      */
     private array $events = [];
+    private array $stopwatchEvents = [];
 
-    public function subscribe(Client $client): void
-    {
-        $client->getManager()->addSubscriber($this);
+    public function __construct(
+        private string $clientName,
+        private ?Stopwatch $stopwatch = null,
+    ) {
     }
 
     /**
@@ -51,16 +53,33 @@ final class DriverEventSubscriber implements CommandSubscriber, ResetInterface
     public function commandFailed(CommandFailedEvent $event): void
     {
         $this->events[] = $event;
+
+        if (isset($this->stopwatchEvents[$event->getRequestId()])) {
+            $this->stopwatchEvents[$event->getRequestId()]->stop();
+            unset($this->stopwatchEvents[$event->getRequestId()]);
+        }
     }
 
     public function commandStarted(CommandStartedEvent $event): void
     {
         $this->events[] = $event;
+
+        if ($this->stopwatch) {
+            $this->stopwatchEvents[$event->getRequestId()] = $this->stopwatch->start(
+                'mongodb.'.$this->clientName.'.'.$event->getCommandName(),
+                'mongodb',
+            );
+        }
     }
 
     public function commandSucceeded(CommandSucceededEvent $event): void
     {
         $this->events[] = $event;
+
+        if (isset($this->stopwatchEvents[$event->getRequestId()])) {
+            $this->stopwatchEvents[$event->getRequestId()]->stop();
+            unset($this->stopwatchEvents[$event->getRequestId()]);
+        }
     }
 
     public function reset(): void
