@@ -59,7 +59,7 @@ final class MongoDBExtensionTest extends TestCase
 
         // Check service definition
         $definition = $container->getDefinition('mongodb.client.default');
-        $this->assertSame(Client::class, $definition->getClass());
+        $this->assertTrue(is_a($definition->getClass(), Client::class, true), sprintf('Expected "%s" to be a "%s"', $definition->getClass(), Client::class));
         $this->assertSame('mongodb://localhost:27017', $definition->getArgument('$uri'));
 
         // Check alias definition
@@ -93,12 +93,12 @@ final class MongoDBExtensionTest extends TestCase
 
         // Check service definitions
         $definition = $container->getDefinition('mongodb.client.default');
-        $this->assertSame(Client::class, $definition->getClass());
+        $this->assertTrue(is_a($definition->getClass(), Client::class, true), sprintf('Expected "%s" to be a "%s"', $definition->getClass(), Client::class));
         $this->assertSame('mongodb://localhost:27017', $definition->getArgument('$uri'));
         $this->assertSame(['readPreference' => 'primary'], $definition->getArgument('$uriOptions'));
 
         $definition = $container->getDefinition('mongodb.client.secondary');
-        $this->assertSame(Client::class, $definition->getClass());
+        $this->assertTrue(is_a($definition->getClass(), Client::class, true), sprintf('Expected "%s" to be a "%s"', $definition->getClass(), Client::class));
         $this->assertSame('mongodb://localhost:27018', $definition->getArgument('$uri'));
         $this->assertEquals(['serverApi' => new ServerApi((string) ServerApi::V1)], $definition->getArgument('$driverOptions'));
     }

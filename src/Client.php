@@ -20,20 +20,16 @@ declare(strict_types=1);
 
 namespace MongoDB\Bundle;
 
-use MongoDB\Bundle\DependencyInjection\MongoDBExtension;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
-use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
+use MongoDB\Client as MongoDBClient;
+use MongoDB\Driver\Monitoring\Subscriber;
 
-final class MongoDBBundle extends AbstractBundle
+final class Client extends MongoDBClient
 {
-    public function getContainerExtension(): ?ExtensionInterface
+    /**
+     * @internal
+     */
+    public function addSubscriber(Subscriber $subscriber): void
     {
-        return new MongoDBExtension();
-    }
-
-    public function build(ContainerBuilder $container): void
-    {
-        $container->addCompilerPass(new DependencyInjection\Compiler\DataCollectorPass());
+        $this->getManager()->addSubscriber($subscriber);
     }
 }

@@ -27,7 +27,6 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
-use Symfony\Component\DependencyInjection\Reference;
 
 use function dirname;
 use function sprintf;
@@ -73,10 +72,8 @@ final class MongoDBExtension extends Extension
             $clientDefinition->setArgument('$uri', $configuration['uri']);
             $clientDefinition->setArgument('$uriOptions', $configuration['uri_options'] ?? []);
             $clientDefinition->setArgument('$driverOptions', $configuration['driver_options'] ?? []);
-
+            $clientDefinition->addTag('mongodb.client', ['name' => $client]);
             $container->setDefinition($serviceId, $clientDefinition);
-
-            $dataCollector->addMethodCall('addClient', [$client, new Reference($serviceId)]);
 
             if (isset($configuration['default_database'])) {
                 $container->setParameter(sprintf('%s.default_database', $serviceId), $configuration['default_database']);

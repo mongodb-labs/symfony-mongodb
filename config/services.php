@@ -20,9 +20,9 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
+use MongoDB\Bundle\Client;
 use MongoDB\Bundle\Command\DebugCommand;
 use MongoDB\Bundle\DataCollector\MongoDBDataCollector;
-use MongoDB\Bundle\TraceableClient;
 
 return static function (ContainerConfigurator $container): void {
     // default configuration for services in *this* file
@@ -39,14 +39,13 @@ return static function (ContainerConfigurator $container): void {
         ->tag('console.command');
 
     $services
-        ->set('mongodb.prototype.client', TraceableClient::class)
+        ->set('mongodb.prototype.client', Client::class)
         ->arg('$uri', abstract_arg('Should be defined by pass'))
         ->arg('$uriOptions', abstract_arg('Should be defined by pass'))
-        ->arg('$driverOptions', abstract_arg('Should be defined by pass'))
-        ->tag('mongodb.client');
+        ->arg('$driverOptions', abstract_arg('Should be defined by pass'));
 
     $services
-        ->set('data_collector.mongodb', MongoDBDataCollector::class)
+        ->set('mongodb.data_collector', MongoDBDataCollector::class)
         ->tag('data_collector', [
             'template' => '@MongoDB/Collector/mongodb.html.twig',
             'id' => 'mongodb',

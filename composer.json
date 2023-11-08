@@ -28,6 +28,7 @@
         "symfony/framework-bundle": "^6.3.5 || ^7.0",
         "symfony/phpunit-bridge": "~6.3.10 || ^6.4.1 || ^7.0.1",
         "symfony/yaml": "^6.3 || ^7.0",
+        "symfony/web-profiler-bundle": "^6.3 || ^7.0",
         "zenstruck/browser": "^1.6"
     },
     "scripts": {

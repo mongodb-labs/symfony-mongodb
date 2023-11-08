@@ -20,9 +20,7 @@ declare(strict_types=1);
 
 namespace MongoDB\Bundle\DataCollector;
 
-use MongoDB\BSON\Document;
-use MongoDB\Bundle\TraceableClient;
-use MongoDB\Client;
+use MongoDB\Bundle\Client;
 use MongoDB\Driver\Monitoring\CommandFailedEvent;
 use MongoDB\Driver\Monitoring\CommandStartedEvent;
 use MongoDB\Driver\Monitoring\CommandSucceededEvent;
@@ -33,67 +31,61 @@ use Symfony\Component\HttpKernel\DataCollector\DataCollector;
 final class MongoDBDataCollector extends DataCollector
 {
     /**
-     * @var list<Client>
+     * @var list<array{client:Client, subscriber:DriverEventSubscriber}>
      */
     private array $clients = [];
 
-    public function addClient(string $name, Client $client): void
+    public function addClient(string $name, Client $client, DriverEventSubscriber $subscriber): void
     {
-        $this->clients[$name] = $client;
+        $this->clients[$name] = [
+            'client' => $client,
+            'subscriber' => $subscriber,
+        ];
     }
 
     public function collect(Request $request, Response $response, ?\Throwable $exception = null): void
     {
-        foreach ($this->clients as $name => $client) {
+        foreach ($this->clients as $name => ['client' => $client, 'subscriber' => $subscriber]) {
             $totalTime = 0;
             $requestCount = 0;
             $errorCount = 0;
             $requests = [];
 
-            if ($client instanceof TraceableClient) {
-                foreach ($client->getEvents() as $event) {
-                    $requestId = $event->getRequestId();
+            foreach ($subscriber->getEvents() as $event) {
+                $requestId = $event->getRequestId();
 
-                    $eventData = [
-                        'class' => $event::class,
-                        'commandName' => $event->getCommandName(),
-                        'server' => $event->getServer()->getInfo(),
+                if ($event instanceof CommandStartedEvent) {
+                    $command = (array) $event->getCommand();
+                    unset($command['lsid'], $command['$clusterTime']);
+
+                    $requests[$requestId] = [
                         'client' => $name,
+                        'startedAt' => hrtime(true),
+                        'commandName' => $event->getCommandName(),
+                        'command' => $command,
+                        // 'server' => $event->getServer()->getInfo(),
+                        'operationId' => $event->getOperationId(),
+                        'database' => $event->getDatabaseName(),
+                        'serviceId' => $event->getServiceId(),
                     ];
-
-                    if ($event instanceof CommandStartedEvent) {
-                        $command = (array) $event->getCommand();
-                        unset($command['lsid'], $command['$clusterTime']);
-
-                        $requests[$requestId] = [
-                            'client' => $name,
-                            'startedAt' => hrtime(true),
-                            'commandName' => $event->getCommandName(),
-                            'command' => $command,
-                            // 'server' => $event->getServer()->getInfo(),
-                            'operationId' => $event->getOperationId(),
-                            'database' => $event->getDatabaseName(),
-                            'serviceId' => $event->getServiceId(),
-                        ];
-                        ++$requestCount;
-                    } elseif ($event instanceof CommandSucceededEvent) {
-                        $requests[$requestId] += [
-                            // 'reply' => Document::fromPHP($event->getReply()),
-                            'duration' => $event->getDurationMicros(),
-                            'endedAt' => hrtime(true),
-                            'success' => true,
-                        ];
-                        $totalTime += $event->getDurationMicros();
-                    } elseif ($event instanceof CommandFailedEvent) {
-                        $requests[$requestId] += [
-                            // 'reply' => Document::fromPHP($event->getReply()),
-                            'duration' => $event->getDurationMicros(),
-                            'error' => $event->getError(),
-                            'success' => false,
-                        ];
-                        $totalTime += $event->getDurationMicros();
-                        ++$errorCount;
-                    }
+                    ++$requestCount;
+                } elseif ($event instanceof CommandSucceededEvent) {
+                    $requests[$requestId] += [
+                        // 'reply' => Document::fromPHP($event->getReply()),
+                        'duration' => $event->getDurationMicros(),
+                        'endedAt' => hrtime(true),
+                        'success' => true,
+                    ];
+                    $totalTime += $event->getDurationMicros();
+                } elseif ($event instanceof CommandFailedEvent) {
+                    $requests[$requestId] += [
+                        // 'reply' => Document::fromPHP($event->getReply()),
+                        'duration' => $event->getDurationMicros(),
+                        'error' => $event->getError(),
+                        'success' => false,
+                    ];
+                    $totalTime += $event->getDurationMicros();
+                    ++$errorCount;
                 }
             }
 
