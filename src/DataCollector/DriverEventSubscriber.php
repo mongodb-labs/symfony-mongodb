@@ -25,8 +25,10 @@ use MongoDB\Driver\Monitoring\CommandFailedEvent;
 use MongoDB\Driver\Monitoring\CommandStartedEvent;
 use MongoDB\Driver\Monitoring\CommandSubscriber;
 use MongoDB\Driver\Monitoring\CommandSucceededEvent;
+use Symfony\Contracts\Service\ResetInterface;
 
-final class DriverEventSubscriber implements CommandSubscriber
+/** @internal */
+final class DriverEventSubscriber implements CommandSubscriber, ResetInterface
 {
     /**
      * @var list<CommandFailedEvent|CommandStartedEvent|CommandSucceededEvent>
@@ -59,5 +61,10 @@ final class DriverEventSubscriber implements CommandSubscriber
     public function commandSucceeded(CommandSucceededEvent $event): void
     {
         $this->events[] = $event;
+    }
+
+    public function reset(): void
+    {
+        $this->events = [];
     }
 }

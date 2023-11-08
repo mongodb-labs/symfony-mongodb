@@ -28,6 +28,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\DataCollector\DataCollector;
 
+/** @internal */
 final class MongoDBDataCollector extends DataCollector
 {
     /**
@@ -63,7 +64,6 @@ final class MongoDBDataCollector extends DataCollector
                         'startedAt' => hrtime(true),
                         'commandName' => $event->getCommandName(),
                         'command' => $command,
-                        // 'server' => $event->getServer()->getInfo(),
                         'operationId' => $event->getOperationId(),
                         'database' => $event->getDatabaseName(),
                         'serviceId' => $event->getServiceId(),
@@ -71,7 +71,6 @@ final class MongoDBDataCollector extends DataCollector
                     ++$requestCount;
                 } elseif ($event instanceof CommandSucceededEvent) {
                     $requests[$requestId] += [
-                        // 'reply' => Document::fromPHP($event->getReply()),
                         'duration' => $event->getDurationMicros(),
                         'endedAt' => hrtime(true),
                         'success' => true,
@@ -79,7 +78,6 @@ final class MongoDBDataCollector extends DataCollector
                     $totalTime += $event->getDurationMicros();
                 } elseif ($event instanceof CommandFailedEvent) {
                     $requests[$requestId] += [
-                        // 'reply' => Document::fromPHP($event->getReply()),
                         'duration' => $event->getDurationMicros(),
                         'error' => $event->getError(),
                         'success' => false,
@@ -127,6 +125,10 @@ final class MongoDBDataCollector extends DataCollector
 
     public function reset(): void
     {
-        // TODO: Implement reset() method.
+        $this->data = [];
+
+        foreach ($this->clients as ['subscriber' => $subscriber]) {
+            $subscriber->reset();
+        }
     }
 }
