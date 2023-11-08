@@ -24,8 +24,10 @@ use InvalidArgumentException;
 use MongoDB\Client;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
+use Symfony\Component\DependencyInjection\Reference;
 
 use function dirname;
 use function sprintf;
@@ -62,6 +64,7 @@ final class MongoDBExtension extends Extension
     private function createClients(string $defaultClient, array $clients, ContainerBuilder $container): void
     {
         $clientPrototype = $container->getDefinition('mongodb.prototype.client');
+        $dataCollector = $container->getDefinition('mongodb.data_collector');
 
         foreach ($clients as $client => $configuration) {
             $serviceId = self::createClientServiceId($client);
@@ -72,6 +75,8 @@ final class MongoDBExtension extends Extension
             $clientDefinition->setArgument('$driverOptions', $configuration['driver_options'] ?? []);
 
             $container->setDefinition($serviceId, $clientDefinition);
+
+            $dataCollector->addMethodCall('addClient', [$client, new Reference($serviceId)]);
 
             if (isset($configuration['default_database'])) {
                 $container->setParameter(sprintf('%s.default_database', $serviceId), $configuration['default_database']);
