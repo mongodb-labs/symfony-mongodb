@@ -21,11 +21,13 @@ declare(strict_types=1);
 namespace MongoDB\Bundle\Tests\Unit\DependencyInjection;
 
 use InvalidArgumentException;
+use MongoDB\Bundle\DependencyInjection\Compiler\DataCollectorPass;
 use MongoDB\Bundle\DependencyInjection\MongoDBExtension;
 use MongoDB\Client;
 use MongoDB\Driver\ServerApi;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\ParameterBag\EnvPlaceholderParameterBag;
 
 /** @covers \MongoDB\Bundle\DependencyInjection\MongoDBExtension */
@@ -50,7 +52,8 @@ final class MongoDBExtensionTest extends TestCase
             'clients' => [
                 ['id' => 'default', 'uri' => 'mongodb://localhost:27017'],
             ],
-        ],
+        ]], [
+            'profiler' => new Definition(\stdClass::class),
         ]);
 
         $this->assertTrue($container->hasDefinition('mongodb.client.default'));
@@ -61,10 +64,33 @@ final class MongoDBExtensionTest extends TestCase
         $definition = $container->getDefinition('mongodb.client.default');
         $this->assertTrue(is_a($definition->getClass(), Client::class, true), sprintf('Expected "%s" to be a "%s"', $definition->getClass(), Client::class));
         $this->assertSame('mongodb://localhost:27017', $definition->getArgument('$uri'));
+        $this->assertTrue($definition->hasMethodCall('addSubscriber'));
 
         // Check alias definition
         $alias = $container->getAlias(Client::class);
         $this->assertSame('mongodb.client.default', (string) $alias);
+
+        // Check data collector
+        $definition = $container->getDefinition('mongodb.data_collector');
+        $this->assertTrue($definition->hasMethodCall('addClient'));
+        $this->assertSame('default', $definition->getMethodCalls()[0][1][0]);
+    }
+
+    public function testLoadWithoutProfiler(): void
+    {
+        $container = $this->getContainer([[
+            'clients' => [
+                ['id' => 'default', 'uri' => 'mongodb://localhost:27017'],
+            ],
+        ]]);
+
+        // Check service definition
+        $definition = $container->getDefinition('mongodb.client.default');
+        $this->assertFalse($definition->hasMethodCall('addSubscriber'));
+
+        // Check data collector
+        $definition = $container->getDefinition('mongodb.data_collector');
+        $this->assertFalse($definition->hasMethodCall('addClient'));
     }
 
     public function testLoadWithMultipleClients(): void
@@ -83,7 +109,8 @@ final class MongoDBExtensionTest extends TestCase
                     'driver_options' => ['serverApi' => new ServerApi((string) ServerApi::V1)],
                 ],
             ],
-        ],
+        ]], [
+            'profiler' => new Definition(\stdClass::class),
         ]);
 
         $this->assertTrue($container->hasDefinition('mongodb.client.default'));
@@ -96,11 +123,19 @@ final class MongoDBExtensionTest extends TestCase
         $this->assertTrue(is_a($definition->getClass(), Client::class, true), sprintf('Expected "%s" to be a "%s"', $definition->getClass(), Client::class));
         $this->assertSame('mongodb://localhost:27017', $definition->getArgument('$uri'));
         $this->assertSame(['readPreference' => 'primary'], $definition->getArgument('$uriOptions'));
+        $this->assertTrue($definition->hasMethodCall('addSubscriber'));
 
         $definition = $container->getDefinition('mongodb.client.secondary');
         $this->assertTrue(is_a($definition->getClass(), Client::class, true), sprintf('Expected "%s" to be a "%s"', $definition->getClass(), Client::class));
         $this->assertSame('mongodb://localhost:27018', $definition->getArgument('$uri'));
         $this->assertEquals(['serverApi' => new ServerApi((string) ServerApi::V1)], $definition->getArgument('$driverOptions'));
+        $this->assertTrue($definition->hasMethodCall('addSubscriber'));
+
+        // Check data collector
+        $definition = $container->getDefinition('mongodb.data_collector');
+        $this->assertCount(2, $definition->getMethodCalls());
+        $this->assertTrue($definition->hasMethodCall('addClient'));
+        $this->assertSame(['default', 'secondary'], array_column(array_column($definition->getMethodCalls(), 1), 0));
     }
 
     private function getContainer(array $config = [], array $thirdPartyDefinitions = []): ContainerBuilder
@@ -113,6 +148,7 @@ final class MongoDBExtensionTest extends TestCase
 
         $container->getCompilerPassConfig()->setOptimizationPasses([]);
         $container->getCompilerPassConfig()->setRemovingPasses([]);
+        $container->addCompilerPass(new DataCollectorPass());
 
         $loader = new MongoDBExtension();
         $loader->load($config, $container);
