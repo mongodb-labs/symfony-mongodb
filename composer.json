@@ -17,7 +17,7 @@
         "symfony/config": "^6.3",
         "symfony/console": "^6.3",
         "symfony/dependency-injection": "^6.3.5",
-        "symfony/http-kernel": "^6.3",
+        "symfony/http-kernel": "^6.3.5",
         "symfony/runtime": "^6.3"
     },
     "require-dev": {
