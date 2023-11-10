@@ -1,0 +1,62 @@
+{
+    "name": "mongodb/symfony-bundle",
+    "description": "Bundle to integrate mongodb/mongodb into Symfony",
+    "keywords": ["database", "driver", "mongodb", "persistence"],
+    "homepage": "https://jira.mongodb.org/browse/PHPORM",
+    "license": "Apache-2.0",
+    "type": "symfony-bundle",
+    "authors": [
+        { "name": "Andreas Braun", "email": "andreas.braun@mongodb.com" },
+        { "name": "Jeremy Mikola", "email": "jmikola@gmail.com" },
+        { "name": "Jérôme Tamarelle", "email": "jerome.tamarelle@mongodb.com" },
+        { "name": "Oskar Stark", "email": "oskarstark@googlemail.com" }
+    ],
+    "require": {
+        "php": ">=8.1",
+        "mongodb/mongodb": "^1.16",
+        "symfony/config": "^6.3",
+        "symfony/console": "^6.3",
+        "symfony/dependency-injection": "^6.3.5",
+        "symfony/http-kernel": "^6.3",
+        "symfony/runtime": "^6.3"
+    },
+    "require-dev": {
+        "doctrine/coding-standard": "^12.0",
+        "rector/rector": "^0.18",
+        "symfony/browser-kit": "^6.3",
+        "symfony/filesystem": "^6.3",
+        "symfony/framework-bundle": "^6.3.5",
+        "symfony/phpunit-bridge": "^6.3",
+        "symfony/yaml": "^6.3",
+        "zenstruck/browser": "^1.6"
+    },
+    "scripts": {
+        "checks": [
+            "@check:cs",
+            "@check:rector"
+        ],
+        "check:cs": "phpcs",
+        "check:rector": "rector --ansi --dry-run",
+        "fix:cs": "phpcbf",
+        "fix:rector": "rector process --ansi",
+        "test": "simple-phpunit"
+    },
+    "autoload": {
+        "psr-4": {
+            "MongoDB\\Bundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "MongoDB\\Bundle\\Tests\\": "tests/",
+            "MongoDB\\Bundle\\Tests\\TestApplication\\": "tests/TestApplication/src/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "symfony/runtime": true
+        },
+        "sort-packages": true
+    }
+}

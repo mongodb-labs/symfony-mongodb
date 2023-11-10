@@ -1,0 +1,88 @@
+name: Test
+
+on:
+    pull_request:
+        branches:
+            - "v*.*"
+            - "feature/*"
+    push:
+        branches:
+            - "v*.*"
+            - "feature/*"
+
+permissions:
+    contents: read
+
+jobs:
+    test:
+        name: PHP ${{ matrix.php-version }} + ${{ matrix.dependencies }} + ${{ matrix.variant }}
+
+        runs-on: ubuntu-latest
+
+        services:
+            mongodb_primary:
+                image: mongo:7-jammy
+                env:
+                    MONGO_INITDB_ROOT_USERNAME: "primary"
+                    MONGO_INITDB_ROOT_PASSWORD: "password"
+                ports:
+                    - "27017:27017"
+            mongodb_secondary:
+                image: mongo:7-jammy
+                env:
+                    MONGO_INITDB_ROOT_USERNAME: "secondary"
+                    MONGO_INITDB_ROOT_PASSWORD: "password"
+                ports:
+                    - "27018:27018"
+
+        continue-on-error: true
+
+        env:
+            SYMFONY_REQUIRE: ${{ matrix.symfony-require }}
+            MONGODB_PRIMARY_URL: 'mongodb://primary:password@localhost:27017'
+            MONGODB_SECONDARY_URL: 'mongodb://secondary:password@localhost:27018'
+
+        strategy:
+            matrix:
+                php-version:
+                    - '8.1'
+                    - '8.2'
+                dependencies:
+                    - 'highest'
+                    - 'lowest'
+                symfony-require:
+                    - ''
+                variant:
+                    - 'normal'
+                    - 'symfony/symfony:"6.3.*"'
+                    - 'symfony/symfony:"6.4.*"'
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Install PHP with extensions
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php-version }}
+
+            - name: Add PHPUnit matcher
+              run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
+
+            - name: Globally install symfony/flex
+              if: matrix.symfony-require != ''
+              run: |
+                  composer global config --no-plugins allow-plugins.symfony/flex true
+                  composer global require --no-progress --no-scripts --no-plugins symfony/flex
+
+            - name: Install variant
+              if: matrix.variant != 'normal' && !startsWith(matrix.variant, 'symfony/symfony')
+              run: composer require ${{ matrix.variant }} --no-update
+
+            - name: Install Composer dependencies (${{ matrix.dependencies }})
+              uses: ramsey/composer-install@v2
+              with:
+                  dependency-versions: ${{ matrix.dependencies }}
+
+            - name: Run Tests
+              run: vendor/bin/simple-phpunit --configuration=phpunit.xml.dist

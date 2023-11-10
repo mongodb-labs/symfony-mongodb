@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+    mongodb_primary:
+        image: mongo:7-jammy
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: primary
+            MONGO_INITDB_ROOT_PASSWORD: password
+        ports: [ '27017' ]
+
+    mongodb_secondary:
+        image: mongo:7-jammy
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: secondary
+            MONGO_INITDB_ROOT_PASSWORD: password
+        ports: [ '27018' ]
+

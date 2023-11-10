@@ -1,0 +1,12 @@
+{
+    "bundles": {
+        "MongoDB\\Bundle\\MongoDBBundle": ["all"]
+    },
+    "aliases": ["mongodb"],
+    "copy-from-recipe": {
+        "config/": "%CONFIG_DIR%/"
+    },
+    "env": {
+        "MONGODB_URI": ""
+    }
+}
