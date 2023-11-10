@@ -20,97 +20,88 @@ declare(strict_types=1);
 
 namespace MongoDB\Bundle\DataCollector;
 
-use MongoDB\Bundle\Client;
-use MongoDB\Driver\Monitoring\CommandFailedEvent;
-use MongoDB\Driver\Monitoring\CommandStartedEvent;
-use MongoDB\Driver\Monitoring\CommandSucceededEvent;
+use MongoDB\Client;
+use MongoDB\Driver\Command;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\DataCollector\DataCollector;
+use Symfony\Component\HttpKernel\DataCollector\LateDataCollectorInterface;
+use Throwable;
+
+use function array_column;
+use function array_diff_key;
+use function array_map;
+use function array_sum;
+use function count;
+use function debug_backtrace;
+use function dump;
+use function iterator_to_array;
+
+use const DEBUG_BACKTRACE_IGNORE_ARGS;
 
 /** @internal */
-final class MongoDBDataCollector extends DataCollector
+final class MongoDBDataCollector extends DataCollector implements LateDataCollectorInterface
 {
     /**
-     * @var list<array{client:Client, subscriber:DriverEventSubscriber}>
+     * The list of request by client name is built with driver event data.
+     *
+     * @var array<string, array<string, array{clientName:string,databaseName:string,commandName:string,command:array,operationId:int,serviceId:int,durationMicros?:int,error?:string}>>
      */
-    private array $clients = [];
+    private array $requests = [];
 
-    public function addClient(string $name, Client $client, DriverEventSubscriber $subscriber): void
-    {
-        $this->clients[$name] = [
-            'client' => $client,
-            'subscriber' => $subscriber,
-        ];
+    public function __construct(
+        /** @var iterable<string, Client> */
+        private readonly iterable $clients = [],
+    ) {
     }
 
-    public function collect(Request $request, Response $response, ?\Throwable $exception = null): void
+    public function collectCommandEvent(string $clientName, string $requestId, array $data): void
     {
-        foreach ($this->clients as $name => ['client' => $client, 'subscriber' => $subscriber]) {
-            $totalTime = 0;
-            $requestCount = 0;
-            $errorCount = 0;
-            $requests = [];
-
-            foreach ($subscriber->getEvents() as $event) {
-                $requestId = $event->getRequestId();
-
-                if ($event instanceof CommandStartedEvent) {
-                    $command = (array) $event->getCommand();
-                    unset($command['lsid'], $command['$clusterTime']);
-
-                    $requests[$requestId] = [
-                        'client' => $name,
-                        'startedAt' => hrtime(true),
-                        'commandName' => $event->getCommandName(),
-                        'command' => $command,
-                        'operationId' => $event->getOperationId(),
-                        'database' => $event->getDatabaseName(),
-                        'serviceId' => $event->getServiceId(),
-                    ];
-                    ++$requestCount;
-                } elseif ($event instanceof CommandSucceededEvent) {
-                    $requests[$requestId] += [
-                        'duration' => $event->getDurationMicros(),
-                        'endedAt' => hrtime(true),
-                        'success' => true,
-                    ];
-                    $totalTime += $event->getDurationMicros();
-                } elseif ($event instanceof CommandFailedEvent) {
-                    $requests[$requestId] += [
-                        'duration' => $event->getDurationMicros(),
-                        'error' => $event->getError(),
-                        'success' => false,
-                    ];
-                    $totalTime += $event->getDurationMicros();
-                    ++$errorCount;
-                }
-            }
-
-            $this->data['clients'][$name] = [
-                'name' => $name,
-                'uri' => (string) $client,
-                'totalTime' => $totalTime,
-                'requestCount' => $requestCount,
-                'errorCount' => $errorCount,
-                'requests' => $requests,
-            ];
+        if (isset($this->requests[$clientName][$requestId])) {
+            $this->requests[$clientName][$requestId] += $data;
+        } else {
+            $this->requests[$clientName][$requestId] = $data;
         }
+    }
+
+    public function collect(Request $request, Response $response, ?Throwable $exception = null): void
+    {
+    }
+
+    public function lateCollect(): void
+    {
+        $this->data = [
+            'clients' => array_map(static fn (Client $client) => [
+                'serverBuildInfo' => $client->getManager()->executeCommand('admin', new Command(['buildInfo' => 1]))->toArray()[0],
+                'clientInfo' => array_diff_key($client->__debugInfo(), ['manager' => 1]),
+            ], iterator_to_array($this->clients)),
+            'requests' => $this->requests,
+            'requestCount' => array_sum(array_map(count(...), $this->requests)),
+            'errorCount' => array_sum(array_map(static fn (array $requests) => count(array_column($requests, 'error')), $this->requests)),
+            'durationMicros' => array_sum(array_map(static fn (array $requests) => array_sum(array_column($requests, 'durationMicros')), $this->requests)),
+        ];
+
+        dump($this->data, array_column(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), 'class'));
     }
 
     public function getRequestCount(): int
     {
-        return array_sum(array_column($this->data['clients'], 'requestCount'));
+        return $this->data['requestCount'];
     }
 
     public function getErrorCount(): int
     {
-        return array_sum(array_column($this->data['clients'], 'errorCount'));
+        return $this->data['errorCount'];
     }
 
-    public function getTime(): float
+    public function getTime(): int
     {
-        return array_sum(array_column($this->data['clients'], 'totalTime'));
+        return $this->data['durationMicros'];
+    }
+
+    public function getRequests(): array
+    {
+        return $this->data['requests'];
     }
 
     public function getClients(): array
@@ -125,10 +116,7 @@ final class MongoDBDataCollector extends DataCollector
 
     public function reset(): void
     {
+        $this->requests = [];
         $this->data = [];
-
-        foreach ($this->clients as ['subscriber' => $subscriber]) {
-            $subscriber->reset();
-        }
     }
 }

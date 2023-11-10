@@ -23,6 +23,7 @@ namespace MongoDB\Bundle\DependencyInjection;
 use InvalidArgumentException;
 use MongoDB\Client;
 use Symfony\Component\Config\FileLocator;
+use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Extension\Extension;
@@ -62,13 +63,10 @@ final class MongoDBExtension extends Extension
 
     private function createClients(string $defaultClient, array $clients, ContainerBuilder $container): void
     {
-        $clientPrototype = $container->getDefinition('mongodb.prototype.client');
-        $dataCollector = $container->getDefinition('mongodb.data_collector');
-
         foreach ($clients as $client => $configuration) {
             $serviceId = self::createClientServiceId($client);
 
-            $clientDefinition = clone $clientPrototype;
+            $clientDefinition = new ChildDefinition('mongodb.abstract.client');
             $clientDefinition->setArgument('$uri', $configuration['uri']);
             $clientDefinition->setArgument('$uriOptions', $configuration['uri_options'] ?? []);
             $clientDefinition->setArgument('$driverOptions', $configuration['driver_options'] ?? []);
@@ -92,8 +90,5 @@ final class MongoDBExtension extends Extension
                 $clients[$defaultClient]['default_database'],
             );
         }
-
-        // Remove the prototype definition as it's tagged as client
-        $container->removeDefinition('mongodb.prototype.client');
     }
 }

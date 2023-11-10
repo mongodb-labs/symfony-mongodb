@@ -71,40 +71,116 @@
         </div>
     </div>
 
-
 <div class="sf-tabs" style="margin-top: 20px;">
-    <div class="tab {{ collector.clients is empty ? 'disabled' }}">
+    <div class="tab {{ collector.requests is empty ? 'disabled' }}">
+        <h3 class="tab-title">
+            Requests
+        </h3>
+
         <div class="tab-content">
-            {% if not collector.clients %}
+            {% if collector.requests is empty %}
                 <div class="empty">
-                    <p>No executed request.</p>
+                    <p>No executed requests.</p>
                 </div>
             {% else %}
-                {% for name, client in collector.clients %}
+                {% for client, requests in collector.requests %}
                     {% if collector.clients|length > 1 %}
-                        <h3>{{ name }} <small>client</small></h3>
+                        <h3>{{ client }} <small>client</small></h3>
                     {% endif %}
 
-                    {% if client.requests is empty %}
+                    {% if requests is empty %}
                         <div class="empty">
-                            <p>No database queries were performed.</p>
+                            <p>No database requests were performed.</p>
                         </div>
                     {% else %}
-                        <table class="alt queries-table">
+                        <table class="alt requests-table">
                             <thead>
                             <tr>
-                                <th class="nowrap">#</th>
-                                <th class="nowrap">Time<span></span></th>
+                                <th class="nowrap" onclick="javascript:sortTable(this, 0, 'requests-{{ loop.index }}')" data-sort-direction="-1" style="cursor: pointer;">#<span class="text-muted">&#9650;</span></th>
+                                <th class="nowrap" onclick="javascript:sortTable(this, 1, 'requests-{{ loop.index }}')" style="cursor: pointer;">Time<span></span></th>
                                 <th style="width: 100%;">Info</th>
                             </tr>
                             </thead>
-                            <tbody id="queries-{{ loop.index }}">
-                            {% for i, request in client.requests %}
-                                <tr id="queryNo-{{ i }}-{{ loop.parent.loop.index }}">
+                            <tbody id="requests-{{ loop.index }}">
+                            {% for i, request in requests %}
+                                <tr id="requestNo-{{ i }}-{{ loop.parent.loop.index }}">
                                     <td class="nowrap">{{ loop.index }}</td>
-                                    <td class="nowrap">{{ '%0.2f'|format(request.duration / 1000) }}&nbsp;ms</td>
+                                    <td class="nowrap">{{ '%0.2f'|format(request.durationMicros / 1000) }}&nbsp;ms</td>
                                     <td>
-                                        <pre>{{ request.command|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                                        {{ dump(request.command) }}
+
+                                        <div class="text-small font-normal">
+                                            <a href="#" class="sf-toggle link-inverse" data-toggle-selector="#formatted-request-{{ i }}-{{ loop.parent.loop.index }}" data-toggle-alt-content="Hide formatted request">View formatted request</a>
+
+                                            {#
+                                            {% if request.runnable %}
+                                                &nbsp;&nbsp;
+                                                <a href="#" class="sf-toggle link-inverse" data-toggle-selector="#original-request-{{ i }}-{{ loop.parent.loop.index }}" data-toggle-alt-content="Hide runnable request">View runnable request</a>
+                                            {% endif %}
+
+                                            {% if request.explainable %}
+                                                &nbsp;&nbsp;
+                                                <a class="link-inverse" href="{{ path('_profiler', { panel: 'db', token: token, page: 'explain', connection: connection, request: i }) }}" onclick="return explain(this);" data-target-id="explain-{{ i }}-{{ loop.parent.loop.index }}">Explain request</a>
+                                            {% endif %}
+                                            #}
+
+                                            {% if request.backtrace is defined %}
+                                                <a href="#" class="sf-toggle link-inverse" data-toggle-selector="#backtrace-{{ i }}-{{ loop.parent.loop.index }}" data-toggle-alt-content="Hide request backtrace">View request backtrace</a>
+                                            {% endif %}
+                                        </div>
+
+                                        <div id="formatted-request-{{ i }}-{{ loop.parent.loop.index }}" class="sql-runnable hidden">
+                                            <pre style="white-space: pre-wrap">{{ request.command|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                                            <button class="btn btn-sm label hidden" data-clipboard-text="{{ request.command|json_encode|e('html_attr') }}">Copy</button>
+                                        </div>
+
+                                        {#
+                                        {% if request.runnable %}
+                                            <div id="original-request-{{ i }}-{{ loop.parent.loop.index }}" class="sql-runnable hidden">
+                                                {% set runnable_sql = (request.sql ~ ';')|doctrine_replace_request_parameters(request.params) %}
+                                                {{ runnable_sql|doctrine_prettify_sql }}
+                                                <button class="btn btn-sm hidden" data-clipboard-text="{{ runnable_sql|e('html_attr') }}">Copy</button>
+                                            </div>
+                                        {% endif %}
+
+                                        {% if request.explainable %}
+                                            <div id="explain-{{ i }}-{{ loop.parent.loop.index }}" class="sql-explain"></div>
+                                        {% endif %}
+                                        #}
+
+                                        {% if request.backtrace is defined %}
+                                            <div id="backtrace-{{ i }}-{{ loop.parent.loop.index }}" class="0hidden">
+                                                <table>
+                                                    <thead>
+                                                    <tr>
+                                                        <th scope="col">#</th>
+                                                        <th scope="col">File/Call</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {% for trace in request.backtrace %}
+                                                        <tr>
+                                                            <td>{{ loop.index }}</td>
+                                                            <td>
+                                                                <span class="text-small">
+                                                                    {% set line_number = trace.line|default(1) %}
+                                                                    {% if trace.file is defined %}
+                                                                        <a href="{{ trace.file|file_link(line_number) }}">
+                                                                    {% endif %}
+                                                                            {{- trace.class|default ~ (trace.class is defined ? trace.type|default('::')) -}}
+                                                                        <span class="status-warning">{{ trace.function }}</span>
+                                                                    {% if trace.file is defined %}
+                                                                        </a>
+                                                                    {% endif %}
+                                                                    (line {{ line_number }})
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        {% endif %}
                                     </td>
                                 </tr>
                             {% endfor %}

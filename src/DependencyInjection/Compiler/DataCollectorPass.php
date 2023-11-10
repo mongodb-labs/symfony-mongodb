@@ -21,39 +21,31 @@ declare(strict_types=1);
 namespace MongoDB\Bundle\DependencyInjection\Compiler;
 
 use MongoDB\Bundle\DataCollector\DriverEventSubscriber;
+use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
+use function sprintf;
+
 /** @internal */
 final class DataCollectorPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container): void
     {
-        if (!$container->has('profiler')) {
+        if (! $container->has('profiler')) {
             return;
         }
-
-        $dataCollector = $container->getDefinition('mongodb.data_collector');
 
         // Add a subscriber to each client to collect driver events, and register the client to the data collector.
         foreach ($container->findTaggedServiceIds('mongodb.client', true) as $clientId => $attributes) {
             $subscriberId = sprintf('%s.subscriber', $clientId);
-            $subscriber = new Definition(DriverEventSubscriber::class);
-            $subscriber->setArguments([
-                $attributes[0]['name'] ?? $clientId,
-                new Reference('debug.stopwatch', ContainerInterface::NULL_ON_INVALID_REFERENCE),
-            ]);
+            $subscriber = new ChildDefinition('mongodb.abstract.driver_event_subscriber');
+            $subscriber->replaceArgument('$clientName', $attributes[0]['name'] ?? $clientId);
             $container->setDefinition($subscriberId, $subscriber);
-
             $container->getDefinition($clientId)->addMethodCall('addSubscriber', [new Reference($subscriberId)]);
-            $dataCollector->addMethodCall('addClient', [
-                $attributes[0]['name'] ?? $clientId,
-                new Reference($clientId),
-                new Reference($subscriberId),
-            ]);
         }
     }
 }

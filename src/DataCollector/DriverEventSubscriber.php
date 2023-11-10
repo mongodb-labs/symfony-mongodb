@@ -25,65 +25,80 @@ use MongoDB\Driver\Monitoring\CommandStartedEvent;
 use MongoDB\Driver\Monitoring\CommandSubscriber;
 use MongoDB\Driver\Monitoring\CommandSucceededEvent;
 use Symfony\Component\Stopwatch\Stopwatch;
-use Symfony\Contracts\Service\ResetInterface;
+use Symfony\Component\Stopwatch\StopwatchEvent;
+
+use function debug_backtrace;
+
+use const DEBUG_BACKTRACE_IGNORE_ARGS;
 
 /** @internal */
-final class DriverEventSubscriber implements CommandSubscriber, ResetInterface
+final class DriverEventSubscriber implements CommandSubscriber
 {
-    /**
-     * @var list<CommandFailedEvent|CommandStartedEvent|CommandSucceededEvent>
-     */
-    private array $events = [];
+    /** @var array<string, StopwatchEvent> */
     private array $stopwatchEvents = [];
 
     public function __construct(
-        private string $clientName,
-        private ?Stopwatch $stopwatch = null,
+        private readonly string $clientName,
+        private readonly MongoDBDataCollector $dataCollector,
+        private readonly ?Stopwatch $stopwatch = null,
     ) {
-    }
-
-    /**
-     * @return list<CommandFailedEvent|CommandStartedEvent|CommandSucceededEvent>
-     */
-    public function getEvents(): array
-    {
-        return $this->events;
-    }
-
-    public function commandFailed(CommandFailedEvent $event): void
-    {
-        $this->events[] = $event;
-
-        if (isset($this->stopwatchEvents[$event->getRequestId()])) {
-            $this->stopwatchEvents[$event->getRequestId()]->stop();
-            unset($this->stopwatchEvents[$event->getRequestId()]);
-        }
     }
 
     public function commandStarted(CommandStartedEvent $event): void
     {
-        $this->events[] = $event;
+        $requestId = $event->getRequestId();
 
-        if ($this->stopwatch) {
-            $this->stopwatchEvents[$event->getRequestId()] = $this->stopwatch->start(
-                'mongodb.'.$this->clientName.'.'.$event->getCommandName(),
-                'mongodb',
-            );
-        }
+        $command = (array) $event->getCommand();
+        unset($command['lsid'], $command['$clusterTime']);
+
+        $this->dataCollector->collectCommandEvent($this->clientName, $requestId, [
+            'clientName' => $this->clientName,
+            'databaseName' => $event->getDatabaseName(),
+            'commandName' => $event->getCommandName(),
+            'command' => $command,
+            'operationId' => $event->getOperationId(),
+            'serviceId' => $event->getServiceId(),
+            'backtrace' => $this->filterBacktrace(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)),
+        ]);
+
+        $this->stopwatchEvents[$requestId] = $this->stopwatch?->start(
+            'mongodb.' . $this->clientName . '.' . $event->getCommandName(),
+            'mongodb',
+        );
     }
 
     public function commandSucceeded(CommandSucceededEvent $event): void
     {
-        $this->events[] = $event;
+        $requestId = $event->getRequestId();
 
-        if (isset($this->stopwatchEvents[$event->getRequestId()])) {
-            $this->stopwatchEvents[$event->getRequestId()]->stop();
-            unset($this->stopwatchEvents[$event->getRequestId()]);
-        }
+        $this->stopwatchEvents[$requestId]?->stop();
+        unset($this->stopwatchEvents[$requestId]);
+
+        $this->dataCollector->collectCommandEvent($this->clientName, $requestId, [
+            'clientName' => $this->clientName,
+            'durationMicros' => $event->getDurationMicros(),
+        ]);
     }
 
-    public function reset(): void
+    public function commandFailed(CommandFailedEvent $event): void
     {
-        $this->events = [];
+        $requestId = $event->getRequestId();
+
+        $this->stopwatchEvents[$requestId]?->stop();
+        unset($this->stopwatchEvents[$requestId]);
+
+        $this->dataCollector->collectCommandEvent($this->clientName, $requestId, [
+            'clientName' => $this->clientName,
+            'durationMicros' => $event->getDurationMicros(),
+            'error' => $event->getError(),
+        ]);
+    }
+
+    private function filterBacktrace(array $backtrace): array
+    {
+        // skip first since it's always the current method
+        array_shift($backtrace);
+
+        return $backtrace;
     }
 }
