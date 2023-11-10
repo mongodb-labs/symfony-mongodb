@@ -3,11 +3,11 @@ name: Test
 on:
     pull_request:
         branches:
-            - "v*.*"
+            - "*.*"
             - "feature/*"
     push:
         branches:
-            - "v*.*"
+            - "*.*"
             - "feature/*"
 
 permissions:
