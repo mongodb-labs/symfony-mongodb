@@ -25,9 +25,7 @@ use MongoDB\Driver\Monitoring\Subscriber;
 
 final class Client extends MongoDBClient
 {
-    /**
-     * @internal
-     */
+    /** @internal */
     public function addSubscriber(Subscriber $subscriber): void
     {
         $this->getManager()->addSubscriber($subscriber);

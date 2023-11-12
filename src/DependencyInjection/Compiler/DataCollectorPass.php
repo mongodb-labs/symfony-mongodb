@@ -20,12 +20,9 @@ declare(strict_types=1);
 
 namespace MongoDB\Bundle\DependencyInjection\Compiler;
 
-use MongoDB\Bundle\DataCollector\DriverEventSubscriber;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
 use function sprintf;

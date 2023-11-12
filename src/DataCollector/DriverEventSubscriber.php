@@ -27,6 +27,7 @@ use MongoDB\Driver\Monitoring\CommandSucceededEvent;
 use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Stopwatch\StopwatchEvent;
 
+use function array_shift;
 use function debug_backtrace;
 
 use const DEBUG_BACKTRACE_IGNORE_ARGS;

@@ -25,7 +25,6 @@ use MongoDB\Client;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 
@@ -84,11 +83,13 @@ final class MongoDBExtension extends Extension
         // Register an autowiring alias for the default client
         $container->setAlias(Client::class, self::createClientServiceId($defaultClient));
 
-        if (isset($clients[$defaultClient]['default_database'])) {
-            $container->setParameter(
-                sprintf('%s.default_database', Client::class),
-                $clients[$defaultClient]['default_database'],
-            );
+        if (! isset($clients[$defaultClient]['default_database'])) {
+            return;
         }
+
+        $container->setParameter(
+            sprintf('%s.default_database', Client::class),
+            $clients[$defaultClient]['default_database'],
+        );
     }
 }

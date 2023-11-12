@@ -35,8 +35,6 @@ use function array_sum;
 use function count;
 use function iterator_to_array;
 
-use const DEBUG_BACKTRACE_IGNORE_ARGS;
-
 /** @internal */
 final class MongoDBDataCollector extends DataCollector implements LateDataCollectorInterface
 {
