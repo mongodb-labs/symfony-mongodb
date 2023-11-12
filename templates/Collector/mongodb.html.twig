@@ -2,6 +2,35 @@
 
 {% import _self as helper %}
 
+{% block head %}
+    {{ parent() }}
+
+    <style>
+
+        #collector-content .sf-toggle { cursor: pointer; position: relative; }
+        #collector-content .sf-toggle-off .icon-close, .sf-toggle-on .icon-open { display: none; }
+        #collector-content .sf-toggle-off .icon-open, .sf-toggle-on .icon-close { display: block; }
+
+        #collector-content .trace-details { background: var(--base-0); border: var(--border); box-shadow: 0px 0px 1px rgba(128, 128, 128, .2); margin: 0 0 1em; table-layout: fixed; }
+
+        #collector-content .trace-line .icon { opacity: .4; position: absolute; left: 10px; }
+        #collector-content .trace-line .icon svg { fill: var(--base-5); height: 16px; width: 16px; }
+        #collector-content .trace { background: var(--base-0); padding: 10px; margin: 0.5em 0; overflow: auto; font-size: 12px; }
+        #collector-content .trace-method { color: var(--highlight-keyword); font-weight: bold; }
+        #collector-content .trace li { margin-bottom: 0; padding: 0; }
+        #collector-content .trace li.selected { background: var(--trace-selected-background); margin-top: 2px; }
+        #collector-content .trace + .trace { margin-top: 30px; }
+        #collector-content .trace-line { position: relative; margin: 0; padding-top: 8px; padding-bottom: 8px; }
+        #collector-content .trace-line + .trace-line { border-top: var(--border); }
+        #collector-content .trace-line:hover { background: var(--base-1); }
+        #collector-content .trace-line a { color: var(--base-6); }
+        #collector-content .trace-line .icon { opacity: .4; position: absolute; left: 10px; }
+        #collector-content .trace-line .icon svg { fill: var(--base-5); height: 16px; width: 16px; }
+        #collector-content .trace-line .icon.icon-copy { left: auto; top: auto; padding-left: 5px; display: none }
+        #collector-content .trace-line-header { padding-left: 36px; padding-right: 10px; }
+    </style>
+{% endblock %}
+
 {% block toolbar %}
     {% if collector.requestCount > 0 %}
 
@@ -112,19 +141,8 @@
                                         <div class="text-small font-normal">
                                             <a href="#" class="sf-toggle link-inverse" data-toggle-selector="#formatted-request-{{ i }}-{{ loop.parent.loop.index }}" data-toggle-alt-content="Hide formatted request">View formatted request</a>
 
-                                            {#
-                                            {% if request.runnable %}
-                                                &nbsp;&nbsp;
-                                                <a href="#" class="sf-toggle link-inverse" data-toggle-selector="#original-request-{{ i }}-{{ loop.parent.loop.index }}" data-toggle-alt-content="Hide runnable request">View runnable request</a>
-                                            {% endif %}
-
-                                            {% if request.explainable %}
-                                                &nbsp;&nbsp;
-                                                <a class="link-inverse" href="{{ path('_profiler', { panel: 'db', token: token, page: 'explain', connection: connection, request: i }) }}" onclick="return explain(this);" data-target-id="explain-{{ i }}-{{ loop.parent.loop.index }}">Explain request</a>
-                                            {% endif %}
-                                            #}
-
                                             {% if request.backtrace is defined %}
+                                                &nbsp;&nbsp;
                                                 <a href="#" class="sf-toggle link-inverse" data-toggle-selector="#backtrace-{{ i }}-{{ loop.parent.loop.index }}" data-toggle-alt-content="Hide request backtrace">View request backtrace</a>
                                             {% endif %}
                                         </div>
@@ -134,51 +152,42 @@
                                             <button class="btn btn-sm label hidden" data-clipboard-text="{{ request.command|json_encode|e('html_attr') }}">Copy</button>
                                         </div>
 
-                                        {#
-                                        {% if request.runnable %}
-                                            <div id="original-request-{{ i }}-{{ loop.parent.loop.index }}" class="sql-runnable hidden">
-                                                {% set runnable_sql = (request.sql ~ ';')|doctrine_replace_request_parameters(request.params) %}
-                                                {{ runnable_sql|doctrine_prettify_sql }}
-                                                <button class="btn btn-sm hidden" data-clipboard-text="{{ runnable_sql|e('html_attr') }}">Copy</button>
-                                            </div>
-                                        {% endif %}
-
-                                        {% if request.explainable %}
-                                            <div id="explain-{{ i }}-{{ loop.parent.loop.index }}" class="sql-explain"></div>
-                                        {% endif %}
-                                        #}
-
                                         {% if request.backtrace is defined %}
-                                            <div id="backtrace-{{ i }}-{{ loop.parent.loop.index }}" class="0hidden">
-                                                <table>
-                                                    <thead>
-                                                    <tr>
-                                                        <th scope="col">#</th>
-                                                        <th scope="col">File/Call</th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    {% for trace in request.backtrace %}
-                                                        <tr>
-                                                            <td>{{ loop.index }}</td>
-                                                            <td>
-                                                                <span class="text-small">
-                                                                    {% set line_number = trace.line|default(1) %}
+                                            <div id="backtrace-{{ i }}-{{ loop.parent.loop.index }}" class="trace-details hidden">
+                                                {% set firstUserCode = true %}
+                                                {% for trace in request.backtrace %}
+                                                    <div class="trace-line">
+                                                        {% set display = false %}
+                                                        {% if firstUserCode and trace.file is not empty and '/vendor/' not in trace.file and '/var/cache/' not in trace.file %}
+                                                            {% set firstUserCode = false %}
+                                                            {% set display = true %}
+                                                        {% endif %}
+                                                        <div class="trace-line-header break-long-words sf-toggle" data-toggle-selector="#trace-html-{{ i }}-{{ loop.index }}" data-toggle-initial="{{ display ? 'display' : 'hidden' }}">
+                                                            <span class="icon icon-close">{{ include('@WebProfiler/images/icon-minus-square.svg') }}</span>
+                                                            <span class="icon icon-open">{{ include('@WebProfiler/images/icon-plus-square.svg') }}</span>
+                                                            <span class="block trace-file-path">
+                                                                {% set line_number = trace.line|default(1) %}
                                                                     {% if trace.file is defined %}
-                                                                        <a href="{{ trace.file|file_link(line_number) }}">
-                                                                    {% endif %}
-                                                                            {{- trace.class|default ~ (trace.class is defined ? trace.type|default('::')) -}}
-                                                                        <span class="status-warning">{{ trace.function }}</span>
-                                                                    {% if trace.file is defined %}
-                                                                        </a>
-                                                                    {% endif %}
-                                                                    (line {{ line_number }})
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    {% endfor %}
-                                                    </tbody>
-                                                </table>
+                                                                    <a href="{{ trace.file|file_link(line_number) }}">
+                                                                {% endif %}
+                                                                        {{- trace.file|file_relative|default('n/a') -}}
+                                                                {% if trace.file is defined %}
+                                                                    </a>
+                                                                {% endif %}
+                                                                 -> <span class="trace-method">{{ trace.function }}</span>
+                                                                (line {{ line_number }})
+                                                            </span>
+                                                        </div>
+                                                        <div id="trace-html-{{ i }}-{{ loop.index }}" class="trace sf-toggle-content">
+                                                            {{ trace.file|file_excerpt(trace.line)|replace({
+                                                                '#DD0000': 'var(--highlight-string)',
+                                                                '#007700': 'var(--highlight-keyword)',
+                                                                '#0000BB': 'var(--highlight-default)',
+                                                                '#FF8000': 'var(--highlight-comment)'
+                                                            })|raw }}
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
                                             </div>
                                         {% endif %}
                                     </td>

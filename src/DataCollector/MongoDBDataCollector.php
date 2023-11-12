@@ -33,8 +33,6 @@ use function array_diff_key;
 use function array_map;
 use function array_sum;
 use function count;
-use function debug_backtrace;
-use function dump;
 use function iterator_to_array;
 
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
@@ -80,8 +78,6 @@ final class MongoDBDataCollector extends DataCollector implements LateDataCollec
             'errorCount' => array_sum(array_map(static fn (array $requests) => count(array_column($requests, 'error')), $this->requests)),
             'durationMicros' => array_sum(array_map(static fn (array $requests) => array_sum(array_column($requests, 'durationMicros')), $this->requests)),
         ];
-
-        dump($this->data, array_column(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), 'class'));
     }
 
     public function getRequestCount(): int
