@@ -20,12 +20,9 @@ declare(strict_types=1);
 
 namespace MongoDB\Bundle\DependencyInjection\Compiler;
 
-use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
-
-use function sprintf;
 
 /** @internal */
 final class DataCollectorPass implements CompilerPassInterface
@@ -38,11 +35,7 @@ final class DataCollectorPass implements CompilerPassInterface
 
         // Add a subscriber to each client to collect driver events, and register the client to the data collector.
         foreach ($container->findTaggedServiceIds('mongodb.client', true) as $clientId => $attributes) {
-            $subscriberId = sprintf('%s.subscriber', $clientId);
-            $subscriber = new ChildDefinition('mongodb.abstract.driver_event_subscriber');
-            $subscriber->replaceArgument('$clientName', $attributes[0]['name'] ?? $clientId);
-            $container->setDefinition($subscriberId, $subscriber);
-            $container->getDefinition($clientId)->addMethodCall('addSubscriber', [new Reference($subscriberId)]);
+            $container->getDefinition($clientId)->setConfigurator([new Reference('mongodb.data_collector'), 'configureClient']);
         }
     }
 }

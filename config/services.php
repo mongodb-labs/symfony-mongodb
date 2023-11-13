@@ -20,10 +20,9 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
-use MongoDB\Bundle\Client;
 use MongoDB\Bundle\Command\DebugCommand;
-use MongoDB\Bundle\DataCollector\DriverEventSubscriber;
 use MongoDB\Bundle\DataCollector\MongoDBDataCollector;
+use MongoDB\Client;
 
 return static function (ContainerConfigurator $container): void {
     // default configuration for services in *this* file
@@ -47,14 +46,8 @@ return static function (ContainerConfigurator $container): void {
         ->abstract();
 
     $services
-        ->set('mongodb.abstract.driver_event_subscriber', DriverEventSubscriber::class)
-        ->arg('$clientName', abstract_arg('Should be defined by pass'))
-        ->arg('$dataCollector', service('mongodb.data_collector'))
-        ->arg('$stopwatch', service('debug.stopwatch')->nullOnInvalid())
-        ->abstract();
-
-    $services
         ->set('mongodb.data_collector', MongoDBDataCollector::class)
+        ->arg('$stopwatch', service('debug.stopwatch')->nullOnInvalid())
         ->arg('$clients', tagged_iterator('mongodb.client', 'name'))
         ->tag('data_collector', [
             'template' => '@MongoDB/Collector/mongodb.html.twig',

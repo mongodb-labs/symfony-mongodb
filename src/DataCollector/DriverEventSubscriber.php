@@ -39,7 +39,7 @@ final class DriverEventSubscriber implements CommandSubscriber
     private array $stopwatchEvents = [];
 
     public function __construct(
-        private readonly string $clientName,
+        private readonly int $clientId,
         private readonly MongoDBDataCollector $dataCollector,
         private readonly ?Stopwatch $stopwatch = null,
     ) {
@@ -52,8 +52,7 @@ final class DriverEventSubscriber implements CommandSubscriber
         $command = (array) $event->getCommand();
         unset($command['lsid'], $command['$clusterTime']);
 
-        $this->dataCollector->collectCommandEvent($this->clientName, $requestId, [
-            'clientName' => $this->clientName,
+        $this->dataCollector->collectCommandEvent($this->clientId, $requestId, [
             'databaseName' => $event->getDatabaseName(),
             'commandName' => $event->getCommandName(),
             'command' => $command,
@@ -63,7 +62,7 @@ final class DriverEventSubscriber implements CommandSubscriber
         ]);
 
         $this->stopwatchEvents[$requestId] = $this->stopwatch?->start(
-            'mongodb.' . $this->clientName . '.' . $event->getCommandName(),
+            'mongodb.' . $event->getCommandName(),
             'mongodb',
         );
     }
@@ -75,8 +74,7 @@ final class DriverEventSubscriber implements CommandSubscriber
         $this->stopwatchEvents[$requestId]?->stop();
         unset($this->stopwatchEvents[$requestId]);
 
-        $this->dataCollector->collectCommandEvent($this->clientName, $requestId, [
-            'clientName' => $this->clientName,
+        $this->dataCollector->collectCommandEvent($this->clientId, $requestId, [
             'durationMicros' => $event->getDurationMicros(),
         ]);
     }
@@ -88,8 +86,7 @@ final class DriverEventSubscriber implements CommandSubscriber
         $this->stopwatchEvents[$requestId]?->stop();
         unset($this->stopwatchEvents[$requestId]);
 
-        $this->dataCollector->collectCommandEvent($this->clientName, $requestId, [
-            'clientName' => $this->clientName,
+        $this->dataCollector->collectCommandEvent($this->clientId, $requestId, [
             'durationMicros' => $event->getDurationMicros(),
             'error' => $event->getError(),
         ]);

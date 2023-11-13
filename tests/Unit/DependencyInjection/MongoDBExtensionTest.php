@@ -70,7 +70,7 @@ final class MongoDBExtensionTest extends TestCase
         // Check service definition
         $definition = $container->getDefinition('mongodb.client.default');
         $this->assertSame('mongodb://localhost:27017', $definition->getArgument('$uri'));
-        $this->assertTrue($definition->hasMethodCall('addSubscriber'));
+        $this->assertNotNull($definition->getConfigurator());
         $this->assertInstanceOf(ChildDefinition::class, $definition);
         $this->assertSame('mongodb.abstract.client', $definition->getParent());
         $parentDefinition = $container->getDefinition($definition->getParent());
@@ -132,20 +132,14 @@ final class MongoDBExtensionTest extends TestCase
         $this->assertSame('mongodb.abstract.client', $definition->getParent());
         $this->assertSame('mongodb://localhost:27017', $definition->getArgument('$uri'));
         $this->assertSame(['readPreference' => 'primary'], $definition->getArgument('$uriOptions'));
-        $this->assertTrue($definition->hasMethodCall('addSubscriber'));
+        $this->assertNotNull($definition->getConfigurator());
 
         $definition = $container->getDefinition('mongodb.client.secondary');
         $this->assertInstanceOf(ChildDefinition::class, $definition);
         $this->assertSame('mongodb.abstract.client', $definition->getParent());
         $this->assertSame('mongodb://localhost:27018', $definition->getArgument('$uri'));
         $this->assertEquals(['serverApi' => new ServerApi((string) ServerApi::V1)], $definition->getArgument('$driverOptions'));
-        $this->assertTrue($definition->hasMethodCall('addSubscriber'));
-
-        // Check data collector
-        $definition = $container->getDefinition('mongodb.data_collector');
-        $this->assertCount(2, $definition->getMethodCalls());
-        $this->assertTrue($definition->hasMethodCall('addClient'));
-        $this->assertSame(['default', 'secondary'], array_column(array_column($definition->getMethodCalls(), 1), 0));
+        $this->assertNotNull($definition->getConfigurator());
     }
 
     private function getContainer(array $config = [], array $thirdPartyDefinitions = []): ContainerBuilder

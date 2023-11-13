@@ -20,15 +20,18 @@ declare(strict_types=1);
 
 namespace MongoDB\Bundle\DataCollector;
 
+use LogicException;
 use MongoDB\Client;
 use MongoDB\Driver\Command;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\DataCollector\DataCollector;
 use Symfony\Component\HttpKernel\DataCollector\LateDataCollectorInterface;
+use Symfony\Component\Stopwatch\Stopwatch;
 use Throwable;
 
 use function array_diff_key;
+use function spl_object_id;
 
 /** @internal */
 final class MongoDBDataCollector extends DataCollector implements LateDataCollectorInterface
@@ -41,17 +44,23 @@ final class MongoDBDataCollector extends DataCollector implements LateDataCollec
     private array $requests = [];
 
     public function __construct(
+        private readonly ?Stopwatch $stopwatch = null,
         /** @var iterable<string, Client> */
         private readonly iterable $clients = [],
     ) {
     }
 
-    public function collectCommandEvent(string $clientName, string $requestId, array $data): void
+    public function configureClient(Client $client): void
     {
-        if (isset($this->requests[$clientName][$requestId])) {
-            $this->requests[$clientName][$requestId] += $data;
+        $client->getManager()->addSubscriber(new DriverEventSubscriber(spl_object_id($client), $this, $this->stopwatch));
+    }
+
+    public function collectCommandEvent(int $clientId, string $requestId, array $data): void
+    {
+        if (isset($this->requests[$clientId][$requestId])) {
+            $this->requests[$clientId][$requestId] += $data;
         } else {
-            $this->requests[$clientName][$requestId] = $data;
+            $this->requests[$clientId][$requestId] = $data;
         }
     }
 
@@ -61,21 +70,14 @@ final class MongoDBDataCollector extends DataCollector implements LateDataCollec
 
     public function lateCollect(): void
     {
-        $requests = $this->requests;
         $requestCount = 0;
         $errorCount = 0;
         $durationMicros = 0;
 
-        foreach ($requests as $clientName => $requestsByClient) {
-            foreach ($requestsByClient as $requestId => $request) {
-                $requestCount++;
-                $durationMicros += $request['durationMicros'] ?? 0;
-                $errorCount += isset($request['error']) ? 1 : 0;
-            }
-        }
-
         $clients = [];
+        $clientIdMap = [];
         foreach ($this->clients as $name => $client) {
+            $clientIdMap[spl_object_id($client)] = $name;
             $clients[$name] = [
                 'serverBuildInfo' => array_diff_key(
                     (array) $client->getManager()->executeCommand('admin', new Command(['buildInfo' => 1]))->toArray()[0],
@@ -83,6 +85,17 @@ final class MongoDBDataCollector extends DataCollector implements LateDataCollec
                 ),
                 'clientInfo' => array_diff_key($client->__debugInfo(), ['manager' => 0]),
             ];
+        }
+
+        $requests = [];
+        foreach ($this->requests as $clientId => $requestsByClientId) {
+            $clientName = $clientIdMap[$clientId] ?? throw new LogicException('Client not found');
+            foreach ($requestsByClientId as $requestId => $request) {
+                $requests[$clientName][$requestId] = $request;
+                $requestCount++;
+                $durationMicros += $request['durationMicros'] ?? 0;
+                $errorCount += isset($request['error']) ? 1 : 0;
+            }
         }
 
         $this->data = [
