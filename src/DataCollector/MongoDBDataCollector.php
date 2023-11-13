@@ -28,12 +28,7 @@ use Symfony\Component\HttpKernel\DataCollector\DataCollector;
 use Symfony\Component\HttpKernel\DataCollector\LateDataCollectorInterface;
 use Throwable;
 
-use function array_column;
 use function array_diff_key;
-use function array_map;
-use function array_sum;
-use function count;
-use function iterator_to_array;
 
 /** @internal */
 final class MongoDBDataCollector extends DataCollector implements LateDataCollectorInterface
@@ -66,15 +61,36 @@ final class MongoDBDataCollector extends DataCollector implements LateDataCollec
 
     public function lateCollect(): void
     {
+        $requests = $this->requests;
+        $requestCount = 0;
+        $errorCount = 0;
+        $durationMicros = 0;
+
+        foreach ($requests as $clientName => $requestsByClient) {
+            foreach ($requestsByClient as $requestId => $request) {
+                $requestCount++;
+                $durationMicros += $request['durationMicros'] ?? 0;
+                $errorCount += isset($request['error']) ? 1 : 0;
+            }
+        }
+
+        $clients = [];
+        foreach ($this->clients as $name => $client) {
+            $clients[$name] = [
+                'serverBuildInfo' => array_diff_key(
+                    (array) $client->getManager()->executeCommand('admin', new Command(['buildInfo' => 1]))->toArray()[0],
+                    ['versionArray' => 0, 'ok' => 0],
+                ),
+                'clientInfo' => array_diff_key($client->__debugInfo(), ['manager' => 0]),
+            ];
+        }
+
         $this->data = [
-            'clients' => array_map(static fn (Client $client) => [
-                'serverBuildInfo' => $client->getManager()->executeCommand('admin', new Command(['buildInfo' => 1]))->toArray()[0],
-                'clientInfo' => array_diff_key($client->__debugInfo(), ['manager' => 1]),
-            ], iterator_to_array($this->clients)),
-            'requests' => $this->requests,
-            'requestCount' => array_sum(array_map(count(...), $this->requests)),
-            'errorCount' => array_sum(array_map(static fn (array $requests) => count(array_column($requests, 'error')), $this->requests)),
-            'durationMicros' => array_sum(array_map(static fn (array $requests) => array_sum(array_column($requests, 'durationMicros')), $this->requests)),
+            'clients' => $clients,
+            'requests' => $requests,
+            'requestCount' => $requestCount,
+            'errorCount' => $errorCount,
+            'durationMicros' => $durationMicros,
         ];
     }
 

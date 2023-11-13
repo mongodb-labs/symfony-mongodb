@@ -79,26 +79,26 @@
 
 {% block panel %}
 
-    <h2>Request Metrics</h2>
+<h2>Request Metrics</h2>
 
-    <div class="metrics">
-        <div class="metric-group">
-            <div class="metric">
-                <span class="value">{{ collector.requestCount }}</span>
-                <span class="label">Requests</span>
-            </div>
+<div class="metrics">
+    <div class="metric-group">
+        <div class="metric">
+            <span class="value">{{ collector.requestCount }}</span>
+            <span class="label">Requests</span>
+        </div>
 
-            <div class="metric">
-                <span class="value">{{ collector.errorCount }}</span>
-                <span class="label">Errors</span>
-            </div>
+        <div class="metric">
+            <span class="value">{{ collector.errorCount }}</span>
+            <span class="label">Errors</span>
+        </div>
 
-            <div class="metric">
-                <span class="value">{{ '%0.2f'|format(collector.time / 1000) }} ms</span>
-                <span class="label">Request time</span>
-            </div>
+        <div class="metric">
+            <span class="value">{{ '%0.2f'|format(collector.time / 1000) }} ms</span>
+            <span class="label">Request time</span>
         </div>
     </div>
+</div>
 
 <div class="sf-tabs" style="margin-top: 20px;">
     <div class="tab {{ collector.requests is empty ? 'disabled' }}">
@@ -200,4 +200,43 @@
             {% endif %}
         </div>
     </div>
+
+    <div class="tab {{ collector.clients is empty ? 'disabled' }}">
+        <h3 class="tab-title">
+            Clients
+            <span class="badge">{{ collector.clients|length }}</span>
+        </h3>
+
+
+        <div class="tab-content">
+            {% if collector.clients is empty %}
+                <div class="empty">
+                    <p>No clients were used.</p>
+                </div>
+            {% endif %}
+            {% for clientName, client in collector.clients %}
+                <h3>Client <code>{{ clientName }}</code></h3>
+                <table>
+                    <thead>
+                    <tr>
+                        <th scope="col" class="key">Key</th>
+                        <th scope="col">Value</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td class="key">Client Debug Info</td>
+                            <td>{{ dump(client.clientInfo) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="key">Server Build Info</td>
+                            <td>{{ dump(client.serverBuildInfo) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            {% endfor %}
+        </div>
+    </div>
+</div>
 {% endblock %}
