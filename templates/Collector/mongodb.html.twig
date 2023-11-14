@@ -6,15 +6,10 @@
     {{ parent() }}
 
     <style>
-
         #collector-content .sf-toggle { cursor: pointer; position: relative; }
         #collector-content .sf-toggle-off .icon-close, .sf-toggle-on .icon-open { display: none; }
         #collector-content .sf-toggle-off .icon-open, .sf-toggle-on .icon-close { display: block; }
-
-        #collector-content .trace-details { background: var(--base-0); border: var(--border); box-shadow: 0px 0px 1px rgba(128, 128, 128, .2); margin: 0 0 1em; table-layout: fixed; }
-
-        #collector-content .trace-line .icon { opacity: .4; position: absolute; left: 10px; }
-        #collector-content .trace-line .icon svg { fill: var(--base-5); height: 16px; width: 16px; }
+        #collector-content .trace-details { background: var(--base-0); border: var(--border); box-shadow: 0 0 1px rgba(128, 128, 128, .2); margin: 0 0 1em; table-layout: fixed; }
         #collector-content .trace { background: var(--base-0); padding: 10px; margin: 0.5em 0; overflow: auto; font-size: 12px; }
         #collector-content .trace-method { color: var(--highlight-keyword); font-weight: bold; }
         #collector-content .trace li { margin-bottom: 0; padding: 0; }
@@ -26,7 +21,6 @@
         #collector-content .trace-line a { color: var(--base-6); }
         #collector-content .trace-line .icon { opacity: .4; position: absolute; left: 10px; }
         #collector-content .trace-line .icon svg { fill: var(--base-5); height: 16px; width: 16px; }
-        #collector-content .trace-line .icon.icon-copy { left: auto; top: auto; padding-left: 5px; display: none }
         #collector-content .trace-line-header { padding-left: 36px; padding-right: 10px; }
     </style>
 {% endblock %}
@@ -139,15 +133,15 @@
                                         {{ dump(request.command) }}
 
                                         <div class="text-small font-normal">
-                                            <a href="#" class="sf-toggle link-inverse" data-toggle-selector="#formatted-request-{{ i }}-{{ loop.parent.loop.index }}" data-toggle-alt-content="Hide formatted request">View formatted request</a>
+                                            <a href="#" class="sf-toggle link-inverse" data-toggle-selector="#formatted-command-{{ i }}-{{ loop.parent.loop.index }}" data-toggle-alt-content="Hide formatted command">View formatted command</a>
 
                                             {% if request.backtrace is defined %}
                                                 &nbsp;&nbsp;
-                                                <a href="#" class="sf-toggle link-inverse" data-toggle-selector="#backtrace-{{ i }}-{{ loop.parent.loop.index }}" data-toggle-alt-content="Hide request backtrace">View request backtrace</a>
+                                                <a href="#" class="sf-toggle link-inverse" data-toggle-selector="#backtrace-{{ i }}-{{ loop.parent.loop.index }}" data-toggle-alt-content="Hide command backtrace">View command backtrace</a>
                                             {% endif %}
                                         </div>
 
-                                        <div id="formatted-request-{{ i }}-{{ loop.parent.loop.index }}" class="sql-runnable hidden">
+                                        <div id="formatted-command-{{ i }}-{{ loop.parent.loop.index }}" class="sql-runnable hidden">
                                             <pre style="white-space: pre-wrap">{{ request.command|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
                                             <button class="btn btn-sm label hidden" data-clipboard-text="{{ request.command|json_encode|e('html_attr') }}">Copy</button>
                                         </div>

@@ -33,7 +33,11 @@ final class DataCollectorPass implements CompilerPassInterface
             return;
         }
 
-        // Add a subscriber to each client to collect driver events, and register the client to the data collector.
+        /**
+         * Add a subscriber to each client to collect driver events.
+         *
+         * @see \MongoDB\Bundle\DataCollector\MongoDBDataCollector::configureClient()
+         */
         foreach ($container->findTaggedServiceIds('mongodb.client', true) as $clientId => $attributes) {
             $container->getDefinition($clientId)->setConfigurator([new Reference('mongodb.data_collector'), 'configureClient']);
         }

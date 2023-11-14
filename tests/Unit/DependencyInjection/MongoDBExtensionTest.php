@@ -32,7 +32,6 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\ParameterBag\EnvPlaceholderParameterBag;
 
-use function array_column;
 use function is_a;
 use function sprintf;
 

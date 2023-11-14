@@ -40,7 +40,7 @@ final class DriverEventSubscriber implements CommandSubscriber
 
     public function __construct(
         private readonly int $clientId,
-        private readonly MongoDBDataCollector $dataCollector,
+        private readonly CommandEventCollector $collector,
         private readonly ?Stopwatch $stopwatch = null,
     ) {
     }
@@ -52,14 +52,20 @@ final class DriverEventSubscriber implements CommandSubscriber
         $command = (array) $event->getCommand();
         unset($command['lsid'], $command['$clusterTime']);
 
-        $this->dataCollector->collectCommandEvent($this->clientId, $requestId, [
+        $data = [
             'databaseName' => $event->getDatabaseName(),
             'commandName' => $event->getCommandName(),
             'command' => $command,
             'operationId' => $event->getOperationId(),
             'serviceId' => $event->getServiceId(),
             'backtrace' => $this->filterBacktrace(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)),
-        ]);
+        ];
+
+        if ($event->getCommandName() === 'getMore') {
+            $data['cursorId'] = $event->getCommand()->getMore;
+        }
+
+        $this->collector->collectCommandEvent($this->clientId, $requestId, $data);
 
         $this->stopwatchEvents[$requestId] = $this->stopwatch?->start(
             'mongodb.' . $event->getCommandName(),
@@ -74,9 +80,15 @@ final class DriverEventSubscriber implements CommandSubscriber
         $this->stopwatchEvents[$requestId]?->stop();
         unset($this->stopwatchEvents[$requestId]);
 
-        $this->dataCollector->collectCommandEvent($this->clientId, $requestId, [
+        $data = [
             'durationMicros' => $event->getDurationMicros(),
-        ]);
+        ];
+
+        if (isset($event->getReply()->cursor)) {
+            $data['cursorId'] = $event->getReply()->cursor->id;
+        }
+
+        $this->collector->collectCommandEvent($this->clientId, $requestId, $data);
     }
 
     public function commandFailed(CommandFailedEvent $event): void
@@ -86,10 +98,12 @@ final class DriverEventSubscriber implements CommandSubscriber
         $this->stopwatchEvents[$requestId]?->stop();
         unset($this->stopwatchEvents[$requestId]);
 
-        $this->dataCollector->collectCommandEvent($this->clientId, $requestId, [
+        $data = [
             'durationMicros' => $event->getDurationMicros(),
-            'error' => $event->getError(),
-        ]);
+            'error' => (string) $event->getError(),
+        ];
+
+        $this->collector->collectCommandEvent($this->clientId, $requestId, $data);
     }
 
     private function filterBacktrace(array $backtrace): array

@@ -34,10 +34,10 @@ use function array_diff_key;
 use function spl_object_id;
 
 /** @internal */
-final class MongoDBDataCollector extends DataCollector implements LateDataCollectorInterface
+final class MongoDBDataCollector extends DataCollector implements LateDataCollectorInterface, CommandEventCollector
 {
     /**
-     * The list of request by client name is built with driver event data.
+     * The list of request by client ID is built with driver event data.
      *
      * @var array<string, array<string, array{clientName:string,databaseName:string,commandName:string,command:array,operationId:int,serviceId:int,durationMicros?:int,error?:string}>>
      */
