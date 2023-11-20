@@ -21,8 +21,17 @@ class DriverEventSubscriberTest extends TestCase
 
     public function setUp(): void
     {
-        $this->collector = new Stubs\CommandEventCollectorStub();
-        $this->stopwatch = new Stopwatch();
+        $this->collector = new class implements CommandEventCollector
+        {
+            public array $events;
+
+            public function collectCommandEvent(int $clientId, string $requestId, array $data): void
+            {
+                $this->events[] = ['clientId' => $clientId, 'requestId' => $requestId, 'data' => $data];
+            }
+        };
+
+        $this->stopwatch = new Stopwatch();;
     }
 
     public function testCommandSucceeded(): void

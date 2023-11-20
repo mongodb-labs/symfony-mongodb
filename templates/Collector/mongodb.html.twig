@@ -29,7 +29,7 @@
     {% if collector.requestCount > 0 %}
 
         {% set icon %}
-            {{ include('@MongoDB/Collector/mongodb.svg') }}
+            {{ source('@MongoDB/Collector/mongodb.svg') }}
 
             <span class="sf-toolbar-value">{{ collector.requestCount }}</span>
             <span class="sf-toolbar-info-piece-additional-detail">
@@ -157,8 +157,8 @@
                                                             {% set display = true %}
                                                         {% endif %}
                                                         <div class="trace-line-header break-long-words sf-toggle" data-toggle-selector="#trace-html-{{ i }}-{{ loop.index }}" data-toggle-initial="{{ display ? 'display' : 'hidden' }}">
-                                                            <span class="icon icon-close">{{ include('@WebProfiler/images/icon-minus-square.svg') }}</span>
-                                                            <span class="icon icon-open">{{ include('@WebProfiler/images/icon-plus-square.svg') }}</span>
+                                                            <span class="icon icon-close">{{ source('@MongoDB/Collector/icon-minus-square.svg') }}</span>
+                                                            <span class="icon icon-open">{{ source('@MongoDB/Collector/icon-plus-square.svg') }}</span>
                                                             <span class="block trace-file-path">
                                                                 {% set line_number = trace.line|default(1) %}
                                                                     {% if trace.file is defined %}
