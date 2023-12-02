@@ -55,6 +55,7 @@ mongodb:
   clients:
     default:
       uri: '%env(MONGODB_URI)%'
+      default_database: #...
       uriOptions: #...
       driverOptions: #...
 ```
@@ -146,7 +147,7 @@ class MyService
 }
 ```
 
-An alternative to this is using the `AutowireDatabase` attribute, referencing the database name:
+An alternative to this is using the `#[AutowireDatabase]` attribute, referencing the database name:
 
 ```php
 use MongoDB\Bundle\Attribute\AutowireDatabase;
@@ -166,13 +167,13 @@ In the following example the database name is `myDatabase`, inferred from the pr
 
 ```php
 use MongoDB\Bundle\Attribute\AutowireCollection;
-use MongoDB\Collection;
+use MongoDB\Database;
 
 class MyService
 {
     public function __construct(
-        #[AutowireCollection()]
-        private Collection $myDatabase,
+        #[AutowireDatabase]
+        private Database $myDatabase,
     ) {}
 }
 ```
@@ -193,7 +194,7 @@ class MyService
 ```
 
 To inject a collection, you can either call the `selectCollection` method on a `Client` or `Database` instance.
-For convenience, the `AutowireCollection` attribute provides a quicker alternative:
+For convenience, the `#[AutowireCollection]` attribute provides a quicker alternative:
 
 ```php
 use MongoDB\Bundle\Attribute\AutowireCollection;
@@ -230,6 +231,7 @@ class MyService
 ```
 
 If you have more than one client defined, you can also reference the client:
+
 ```php
 use MongoDB\Bundle\Attribute\AutowireCollection;
 use MongoDB\Collection;
@@ -241,6 +243,29 @@ class MyService
             database: 'myDatabase',
             client: 'second',
         )]
+        private Collection $myCollection,
+    ) {}
+}
+```
+
+By specifiying the `default_database` option in the configuration, you can omit the `database` option in the attribute:
+
+```diff
+mongodb:
+  clients:
+    default:
+      uri: '%env(MONGODB_URI)%'
++      default_database: 'myDtabase'
+```
+
+```php
+use MongoDB\Bundle\Attribute\AutowireCollection;
+use MongoDB\Collection;
+
+class MyService
+{
+    public function __construct(
+        #[AutowireCollection]
         private Collection $myCollection,
     ) {}
 }
