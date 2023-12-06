@@ -68,8 +68,8 @@ final class MongoDBExtension extends Extension
 
             $clientDefinition = clone $clientPrototype;
             $clientDefinition->setArgument('$uri', $configuration['uri']);
-            $clientDefinition->setArgument('$uriOptions', $configuration['uriOptions'] ?? []);
-            $clientDefinition->setArgument('$driverOptions', $configuration['driverOptions'] ?? []);
+            $clientDefinition->setArgument('$uriOptions', $configuration['uri_options'] ?? []);
+            $clientDefinition->setArgument('$driverOptions', $configuration['driver_options'] ?? []);
 
             $container->setDefinition($serviceId, $clientDefinition);
 

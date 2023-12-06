@@ -75,12 +75,12 @@ final class MongoDBExtensionTest extends TestCase
                 [
                     'id' => 'default',
                     'uri' => 'mongodb://localhost:27017',
-                    'uriOptions' => ['readPreference' => 'primary'],
+                    'uri_options' => ['readPreference' => 'primary'],
                 ],
                 [
                     'id' => 'secondary',
                     'uri' => 'mongodb://localhost:27018',
-                    'driverOptions' => ['serverApi' => new ServerApi((string) ServerApi::V1)],
+                    'driver_options' => ['serverApi' => new ServerApi((string) ServerApi::V1)],
                 ],
             ],
         ],
