@@ -109,4 +109,31 @@ final class AutowireCollectionTest extends TestCase
         $this->assertSame('priceReports', $definition->getArgument(1));
         $this->assertSame(['foo' => 'bar'], $definition->getArgument(2));
     }
+
+    public function testWithCodecOption(): void
+    {
+        $autowire = new AutowireCollection(
+            database: 'mydb',
+            client: 'default',
+            options: ['foo' => 'bar', 'codec' => '@my_codec'],
+        );
+
+        $this->assertEquals([new Reference('mongodb.client.default'), 'selectCollection'], $autowire->value);
+
+        $definition = $autowire->buildDefinition(
+            value: $autowire->value,
+            type: Collection::class,
+            parameter: new ReflectionParameter(
+                static function (Collection $priceReports): void {
+                },
+                'priceReports',
+            ),
+        );
+
+        $this->assertSame(Collection::class, $definition->getClass());
+        $this->assertEquals($autowire->value, $definition->getFactory());
+        $this->assertSame('mydb', $definition->getArgument(0));
+        $this->assertSame('priceReports', $definition->getArgument(1));
+        $this->assertEquals(['foo' => 'bar', 'codec' => new Reference('my_codec')], $definition->getArgument(2));
+    }
 }

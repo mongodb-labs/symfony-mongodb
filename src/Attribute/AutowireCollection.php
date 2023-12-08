@@ -30,6 +30,7 @@ use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
 use function is_string;
+use function ltrim;
 use function sprintf;
 
 /**
@@ -59,12 +60,17 @@ final class AutowireCollection extends AutowireCallable
 
     public function buildDefinition(mixed $value, ?string $type, ReflectionParameter $parameter): Definition
     {
+        $options = $this->options;
+        if (isset($options['codec']) && is_string($options['codec'])) {
+            $options['codec'] = new Reference(ltrim($options['codec'], '@'));
+        }
+
         return (new Definition(is_string($this->lazy) ? $this->lazy : ($type ?: Collection::class)))
             ->setFactory($value)
             ->setArguments([
                 $this->database ?? sprintf('%%%s.default_database%%', $this->serviceId),
                 $this->collection ?? $parameter->getName(),
-                $this->options,
+                $options,
             ])
             ->setLazy($this->lazy);
     }
