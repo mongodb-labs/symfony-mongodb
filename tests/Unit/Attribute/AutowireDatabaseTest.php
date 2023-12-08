@@ -48,7 +48,7 @@ final class AutowireDatabaseTest extends TestCase
 
         $this->assertSame(Database::class, $definition->getClass());
         $this->assertEquals($autowire->value, $definition->getFactory());
-        $this->assertSame('mydb', $definition->getArgument(0));
+        $this->assertSame('%MongoDB\Client.default_database%', $definition->getArgument(0));
     }
 
     public function testDatabase(): void
@@ -98,7 +98,7 @@ final class AutowireDatabaseTest extends TestCase
 
         $this->assertSame(Database::class, $definition->getClass());
         $this->assertEquals($autowire->value, $definition->getFactory());
-        $this->assertSame('mydb', $definition->getArgument(0));
+        $this->assertSame('%mongodb.client.default.default_database%', $definition->getArgument(0));
         $this->assertSame(['foo' => 'bar'], $definition->getArgument(1));
     }
 }

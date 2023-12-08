@@ -46,10 +46,10 @@ final class AutowireDatabaseController extends AbstractMongoDBController
     /** @see AutowireClientTest::testWithCustomClientSetViaOptions() */
     #[Route('/with-custom-client')]
     public function withCustomClient(
-        #[AutowireDatabase(client: FunctionalTestCase::CLIENT_ID_SECONDARY)]
-        Database $google,
+        #[AutowireDatabase(database: 'google', client: FunctionalTestCase::CLIENT_ID_SECONDARY)]
+        Database $database,
     ): JsonResponse {
-        $this->insertDocumentForDatabase($google, FunctionalTestCase::COLLECTION_USERS);
+        $this->insertDocumentForDatabase($database, FunctionalTestCase::COLLECTION_USERS);
 
         return new JsonResponse();
     }
