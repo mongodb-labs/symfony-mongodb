@@ -21,12 +21,19 @@ declare(strict_types=1);
 namespace MongoDB\Bundle\Tests\Unit\DependencyInjection;
 
 use InvalidArgumentException;
+use MongoDB\Bundle\DependencyInjection\Compiler\DataCollectorPass;
 use MongoDB\Bundle\DependencyInjection\MongoDBExtension;
 use MongoDB\Client;
 use MongoDB\Driver\ServerApi;
 use PHPUnit\Framework\TestCase;
+use stdClass;
+use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\ParameterBag\EnvPlaceholderParameterBag;
+
+use function is_a;
+use function sprintf;
 
 /** @covers \MongoDB\Bundle\DependencyInjection\MongoDBExtension */
 final class MongoDBExtensionTest extends TestCase
@@ -51,6 +58,8 @@ final class MongoDBExtensionTest extends TestCase
                 ['id' => 'default', 'uri' => 'mongodb://localhost:27017'],
             ],
         ],
+        ], [
+            'profiler' => new Definition(stdClass::class),
         ]);
 
         $this->assertTrue($container->hasDefinition('mongodb.client.default'));
@@ -59,12 +68,35 @@ final class MongoDBExtensionTest extends TestCase
 
         // Check service definition
         $definition = $container->getDefinition('mongodb.client.default');
-        $this->assertSame(Client::class, $definition->getClass());
         $this->assertSame('mongodb://localhost:27017', $definition->getArgument('$uri'));
+        $this->assertNotNull($definition->getConfigurator());
+        $this->assertInstanceOf(ChildDefinition::class, $definition);
+        $this->assertSame('mongodb.abstract.client', $definition->getParent());
+        $parentDefinition = $container->getDefinition($definition->getParent());
+        $this->assertTrue(is_a($parentDefinition->getClass(), Client::class, true), sprintf('Expected "%s" to be a "%s"', $definition->getClass(), Client::class));
+        $this->assertTrue($parentDefinition->isAbstract());
 
         // Check alias definition
         $alias = $container->getAlias(Client::class);
         $this->assertSame('mongodb.client.default', (string) $alias);
+    }
+
+    public function testLoadWithoutProfiler(): void
+    {
+        $container = $this->getContainer([[
+            'clients' => [
+                ['id' => 'default', 'uri' => 'mongodb://localhost:27017'],
+            ],
+        ],
+        ]);
+
+        // Check service definition
+        $definition = $container->getDefinition('mongodb.client.default');
+        $this->assertFalse($definition->hasMethodCall('addSubscriber'));
+
+        // Check data collector
+        $definition = $container->getDefinition('mongodb.data_collector');
+        $this->assertFalse($definition->hasMethodCall('addClient'));
     }
 
     public function testLoadWithMultipleClients(): void
@@ -84,6 +116,8 @@ final class MongoDBExtensionTest extends TestCase
                 ],
             ],
         ],
+        ], [
+            'profiler' => new Definition(stdClass::class),
         ]);
 
         $this->assertTrue($container->hasDefinition('mongodb.client.default'));
@@ -93,14 +127,18 @@ final class MongoDBExtensionTest extends TestCase
 
         // Check service definitions
         $definition = $container->getDefinition('mongodb.client.default');
-        $this->assertSame(Client::class, $definition->getClass());
+        $this->assertInstanceOf(ChildDefinition::class, $definition);
+        $this->assertSame('mongodb.abstract.client', $definition->getParent());
         $this->assertSame('mongodb://localhost:27017', $definition->getArgument('$uri'));
         $this->assertSame(['readPreference' => 'primary'], $definition->getArgument('$uriOptions'));
+        $this->assertNotNull($definition->getConfigurator());
 
         $definition = $container->getDefinition('mongodb.client.secondary');
-        $this->assertSame(Client::class, $definition->getClass());
+        $this->assertInstanceOf(ChildDefinition::class, $definition);
+        $this->assertSame('mongodb.abstract.client', $definition->getParent());
         $this->assertSame('mongodb://localhost:27018', $definition->getArgument('$uri'));
         $this->assertEquals(['serverApi' => new ServerApi((string) ServerApi::V1)], $definition->getArgument('$driverOptions'));
+        $this->assertNotNull($definition->getConfigurator());
     }
 
     private function getContainer(array $config = [], array $thirdPartyDefinitions = []): ContainerBuilder
@@ -113,6 +151,7 @@ final class MongoDBExtensionTest extends TestCase
 
         $container->getCompilerPassConfig()->setOptimizationPasses([]);
         $container->getCompilerPassConfig()->setRemovingPasses([]);
+        $container->addCompilerPass(new DataCollectorPass());
 
         $loader = new MongoDBExtension();
         $loader->load($config, $container);

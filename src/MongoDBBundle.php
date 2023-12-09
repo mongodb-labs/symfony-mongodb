@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace MongoDB\Bundle;
 
 use MongoDB\Bundle\DependencyInjection\MongoDBExtension;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 
@@ -29,5 +30,10 @@ final class MongoDBBundle extends AbstractBundle
     public function getContainerExtension(): ?ExtensionInterface
     {
         return new MongoDBExtension();
+    }
+
+    public function build(ContainerBuilder $container): void
+    {
+        $container->addCompilerPass(new DependencyInjection\Compiler\DataCollectorPass());
     }
 }
