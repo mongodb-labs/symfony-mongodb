@@ -20,21 +20,16 @@ declare(strict_types=1);
 
 namespace MongoDB\Bundle\Tests\Unit\Attribute;
 
-use MongoDB\BSON\Document;
 use MongoDB\Bundle\Attribute\AutowireCollection;
 use MongoDB\Client;
-use MongoDB\Codec\DecodeIfSupported;
-use MongoDB\Codec\DocumentCodec;
-use MongoDB\Codec\EncodeIfSupported;
 use MongoDB\Collection;
-use PHPUnit\Framework\TestCase;
 use ReflectionParameter;
 use Symfony\Component\DependencyInjection\Reference;
 
 use function sprintf;
 
 /** @covers \MongoDB\Bundle\Attribute\AutowireCollection */
-final class AutowireCollectionTest extends TestCase
+final class AutowireCollectionTest extends AttributeTestCase
 {
     public function testMinimal(): void
     {
@@ -65,7 +60,6 @@ final class AutowireCollectionTest extends TestCase
             collection: 'test',
             database: 'mydb',
             client: 'default',
-            options: ['foo' => 'bar'],
         );
 
         $this->assertEquals([new Reference('mongodb.client.default'), 'selectCollection'], $autowire->value);
@@ -84,7 +78,7 @@ final class AutowireCollectionTest extends TestCase
         $this->assertEquals($autowire->value, $definition->getFactory());
         $this->assertSame('mydb', $definition->getArgument(0));
         $this->assertSame('test', $definition->getArgument(1));
-        $this->assertSame(['foo' => 'bar'], $definition->getArgument(2));
+        $this->assertSame([], $definition->getArgument(2));
     }
 
     public function testWithoutCollection(): void
@@ -92,7 +86,6 @@ final class AutowireCollectionTest extends TestCase
         $autowire = new AutowireCollection(
             database: 'mydb',
             client: 'default',
-            options: ['foo' => 'bar'],
         );
 
         $this->assertEquals([new Reference('mongodb.client.default'), 'selectCollection'], $autowire->value);
@@ -111,19 +104,17 @@ final class AutowireCollectionTest extends TestCase
         $this->assertEquals($autowire->value, $definition->getFactory());
         $this->assertSame('mydb', $definition->getArgument(0));
         $this->assertSame('priceReports', $definition->getArgument(1));
-        $this->assertSame(['foo' => 'bar'], $definition->getArgument(2));
+        $this->assertSame([], $definition->getArgument(2));
     }
 
-    public function testWithCodecOption(): void
+    /** @dataProvider provideOptions */
+    public function testWithOptions(array $attributeArguments, array $expectedOptions): void
     {
         $autowire = new AutowireCollection(
+            ...$attributeArguments,
             database: 'mydb',
             client: 'default',
-            codec: '@my_codec',
-            options: ['foo' => 'bar'],
         );
-
-        $this->assertEquals([new Reference('mongodb.client.default'), 'selectCollection'], $autowire->value);
 
         $definition = $autowire->buildDefinition(
             value: $autowire->value,
@@ -135,63 +126,6 @@ final class AutowireCollectionTest extends TestCase
             ),
         );
 
-        $this->assertSame(Collection::class, $definition->getClass());
-        $this->assertEquals($autowire->value, $definition->getFactory());
-        $this->assertSame('mydb', $definition->getArgument(0));
-        $this->assertSame('priceReports', $definition->getArgument(1));
-        $this->assertEquals(['foo' => 'bar', 'codec' => new Reference('my_codec')], $definition->getArgument(2));
-    }
-
-    public function testWithCodecInstanceParameter(): void
-    {
-        $codec = new class implements DocumentCodec {
-            use DecodeIfSupported;
-            use EncodeIfSupported;
-
-            public function canDecode($value): bool
-            {
-                return $value instanceof Document;
-            }
-
-            public function canEncode($value): bool
-            {
-                return $value instanceof Document;
-            }
-
-            public function decode($value): Document
-            {
-                return $value;
-            }
-
-            public function encode($value): Document
-            {
-                return $value;
-            }
-        };
-
-        $autowire = new AutowireCollection(
-            database: 'mydb',
-            client: 'default',
-            codec: $codec,
-            options: ['foo' => 'bar'],
-        );
-
-        $this->assertEquals([new Reference('mongodb.client.default'), 'selectCollection'], $autowire->value);
-
-        $definition = $autowire->buildDefinition(
-            value: $autowire->value,
-            type: Collection::class,
-            parameter: new ReflectionParameter(
-                static function (Collection $priceReports): void {
-                },
-                'priceReports',
-            ),
-        );
-
-        $this->assertSame(Collection::class, $definition->getClass());
-        $this->assertEquals($autowire->value, $definition->getFactory());
-        $this->assertSame('mydb', $definition->getArgument(0));
-        $this->assertSame('priceReports', $definition->getArgument(1));
-        $this->assertEquals(['foo' => 'bar', 'codec' => $codec], $definition->getArgument(2));
+        $this->assertEquals($expectedOptions, $definition->getArgument(2));
     }
 }

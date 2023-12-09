@@ -25,6 +25,9 @@ use MongoDB\Bundle\DependencyInjection\MongoDBExtension;
 use MongoDB\Client;
 use MongoDB\Codec\DocumentCodec;
 use MongoDB\Collection;
+use MongoDB\Driver\ReadConcern;
+use MongoDB\Driver\ReadPreference;
+use MongoDB\Driver\WriteConcern;
 use ReflectionParameter;
 use Symfony\Component\DependencyInjection\Attribute\AutowireCallable;
 use Symfony\Component\DependencyInjection\Definition;
@@ -47,7 +50,10 @@ final class AutowireCollection extends AutowireCallable
         private readonly ?string $database = null,
         ?string $client = null,
         private readonly string|DocumentCodec|null $codec = null,
-        private readonly array $options = [],
+        private readonly string|array|null $typeMap = null,
+        private readonly string|ReadPreference|null $readPreference = null,
+        private readonly string|WriteConcern|null $writeConcern = null,
+        private readonly string|ReadConcern|null $readConcern = null,
         bool|string $lazy = false,
     ) {
         $this->serviceId = $client === null
@@ -62,13 +68,11 @@ final class AutowireCollection extends AutowireCallable
 
     public function buildDefinition(mixed $value, ?string $type, ReflectionParameter $parameter): Definition
     {
-        $options = $this->options;
-        if ($this->codec !== null) {
-            $options['codec'] = $this->codec;
-        }
-
-        if (isset($options['codec']) && is_string($options['codec'])) {
-            $options['codec'] = new Reference(ltrim($options['codec'], '@'));
+        $options = [];
+        foreach (['codec', 'typeMap', 'readPreference', 'writeConcern', 'readConcern'] as $option) {
+            if ($this->$option !== null) {
+                $options[$option] = is_string($this->$option) ? new Reference($this->$option) : $this->$option;
+            }
         }
 
         return (new Definition(is_string($this->lazy) ? $this->lazy : ($type ?: Collection::class)))

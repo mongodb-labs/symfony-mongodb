@@ -264,20 +264,28 @@ class MyService
 }
 ```
 
-### Using a Codec
+## Specifying options
 
-To use a custom codec for a collection, you can specify the `codec` option in the `AutowireCollection` attribute. The
-codec class must implement the `MongoDB\Codec\DocumentCodec` interface. You can either pass an instance of the selected
-codec, or pass a service reference to the codec:
+When using the `AutowireDatabase` or `AutowireCollection` attributes, you can specify additional options for the
+resulting instances. You can pass the following options:
+|| Option || Accepted type ||
+| `codec` | `DocumentCodec` instance |
+| `typeMap`| `array` containing type map information |
+| `readPreference` | `MongoDB\Driver\ReadPreference` instance |
+| `writeConcern` | `MongoDB\Driver\writeConcern` instance |
+| `readConcern` | `MongoDB\Driver\ReadConcern` instance |
+
+In addition to passing an instance, you can also pass a service reference by specifying a string for the given option:
 
 ```php
 use MongoDB\Bundle\Attribute\AutowireCollection;
 use MongoDB\Collection;
+use MongoDB\Driver\ReadPreference;
 
 class MyService
 {
     public function __construct(
-        #[AutowireCollection(codec: MyCodec::class)]
+        #[AutowireCollection(codec: Codec::class, readPreference: new ReadPreference('secondary'))]
         private Collection $myCollection,
     ) {}
 }

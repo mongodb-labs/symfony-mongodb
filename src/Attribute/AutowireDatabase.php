@@ -23,7 +23,11 @@ namespace MongoDB\Bundle\Attribute;
 use Attribute;
 use MongoDB\Bundle\DependencyInjection\MongoDBExtension;
 use MongoDB\Client;
+use MongoDB\Codec\DocumentCodec;
 use MongoDB\Database;
+use MongoDB\Driver\ReadConcern;
+use MongoDB\Driver\ReadPreference;
+use MongoDB\Driver\WriteConcern;
 use ReflectionParameter;
 use Symfony\Component\DependencyInjection\Attribute\AutowireCallable;
 use Symfony\Component\DependencyInjection\Definition;
@@ -43,7 +47,11 @@ final class AutowireDatabase extends AutowireCallable
     public function __construct(
         private readonly ?string $database = null,
         ?string $client = null,
-        private readonly array $options = [],
+        private readonly string|DocumentCodec|null $codec = null,
+        private readonly string|array|null $typeMap = null,
+        private readonly string|ReadPreference|null $readPreference = null,
+        private readonly string|WriteConcern|null $writeConcern = null,
+        private readonly string|ReadConcern|null $readConcern = null,
         bool|string $lazy = false,
     ) {
         $this->serviceId = $client === null
@@ -58,11 +66,18 @@ final class AutowireDatabase extends AutowireCallable
 
     public function buildDefinition(mixed $value, ?string $type, ReflectionParameter $parameter): Definition
     {
+        $options = [];
+        foreach (['codec', 'typeMap', 'readPreference', 'writeConcern', 'readConcern'] as $option) {
+            if ($this->$option !== null) {
+                $options[$option] = is_string($this->$option) ? new Reference($this->$option) : $this->$option;
+            }
+        }
+
         return (new Definition(is_string($this->lazy) ? $this->lazy : ($type ?: Database::class)))
             ->setFactory($value)
             ->setArguments([
                 $this->database ?? sprintf('%%%s.default_database%%', $this->serviceId),
-                $this->options,
+                $options,
             ])
             ->setLazy($this->lazy);
     }
