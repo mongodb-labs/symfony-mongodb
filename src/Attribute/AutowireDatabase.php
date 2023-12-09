@@ -30,6 +30,7 @@ use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
 use function is_string;
+use function sprintf;
 
 /**
  * Autowires a MongoDB database.
@@ -37,18 +38,20 @@ use function is_string;
 #[Attribute(Attribute::TARGET_PARAMETER)]
 final class AutowireDatabase extends AutowireCallable
 {
+    private readonly string $serviceId;
+
     public function __construct(
         private readonly ?string $database = null,
         ?string $client = null,
         private readonly array $options = [],
         bool|string $lazy = false,
     ) {
-        $callable = $client === null
-            ? [new Reference(Client::class), 'selectDatabase']
-            : [new Reference(MongoDBExtension::createClientServiceId($client)), 'selectDatabase'];
+        $this->serviceId = $client === null
+            ? Client::class
+            : MongoDBExtension::createClientServiceId($client);
 
         parent::__construct(
-            callable: $callable,
+            callable: [new Reference($this->serviceId), 'selectDatabase'],
             lazy: $lazy,
         );
     }
@@ -57,7 +60,10 @@ final class AutowireDatabase extends AutowireCallable
     {
         return (new Definition(is_string($this->lazy) ? $this->lazy : ($type ?: Database::class)))
             ->setFactory($value)
-            ->setArguments([$this->database ?? $parameter->getName(), $this->options])
+            ->setArguments([
+                $this->database ?? sprintf('%%%s.default_database%%', $this->serviceId),
+                $this->options,
+            ])
             ->setLazy($this->lazy);
     }
 }

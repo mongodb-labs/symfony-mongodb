@@ -55,6 +55,7 @@ mongodb:
   clients:
     default:
       uri: '%env(MONGODB_URI)%'
+      default_database: #...
       uri_options: #...
       driver_options: #...
 ```
@@ -96,7 +97,8 @@ class MyService
 }
 ```
 
-If you register multiple clients, you can autowire them by name + `Client` suffix:
+If you register multiple clients, you can autowire them by using the client name with a `Client` suffix as parameter
+name:
 
 ```php
 use MongoDB\Bundle\Attribute\AutowireClient;
@@ -105,6 +107,7 @@ use MongoDB\Client;
 class MyService
 {
     public function __construct(
+        // Will autowire the client with the id "second"
         private Client $secondClient,
     ) {}
 }
@@ -119,7 +122,7 @@ use MongoDB\Client;
 class MyService
 {
     public function __construct(
-       #[AutowireClient('second')]
+        #[AutowireClient('second')]
         private Client $client,
     ) {}
 }
@@ -127,8 +130,8 @@ class MyService
 
 ## Database and Collection Usage
 
-The client service provides access to databases and collections. You can access a database by calling the `selectDatabase`
-method, passing the database name and potential options:
+The client service provides access to databases and collections. You can access a database by calling the
+`selectDatabase` method, passing the database name and potential options:
 
 ```php
 use MongoDB\Client;
@@ -146,7 +149,7 @@ class MyService
 }
 ```
 
-An alternative to this is using the `AutowireDatabase` attribute, referencing the database name:
+An alternative to this is using the `#[AutowireDatabase]` attribute, referencing the database name:
 
 ```php
 use MongoDB\Bundle\Attribute\AutowireDatabase;
@@ -161,21 +164,9 @@ class MyService
 }
 ```
 
-You can also omit the `database` option if the property name matches the database name.
-In the following example the database name is `myDatabase`, inferred from the property name:
-
-```php
-use MongoDB\Bundle\Attribute\AutowireCollection;
-use MongoDB\Collection;
-
-class MyService
-{
-    public function __construct(
-        #[AutowireCollection()]
-        private Collection $myDatabase,
-    ) {}
-}
-```
+If you don't specify a database name in the attribute, the default database name (specified in the `default_database`
+configuration option) will be used. If you did not define a default database, the database name has to be specified in
+the attribute.
 
 If you have more than one client defined, you can also reference the client:
 
@@ -193,7 +184,7 @@ class MyService
 ```
 
 To inject a collection, you can either call the `selectCollection` method on a `Client` or `Database` instance.
-For convenience, the `AutowireCollection` attribute provides a quicker alternative:
+For convenience, the `#[AutowireCollection]` attribute provides a quicker alternative:
 
 ```php
 use MongoDB\Bundle\Attribute\AutowireCollection;
@@ -230,6 +221,7 @@ class MyService
 ```
 
 If you have more than one client defined, you can also reference the client:
+
 ```php
 use MongoDB\Bundle\Attribute\AutowireCollection;
 use MongoDB\Collection;
@@ -241,6 +233,30 @@ class MyService
             database: 'myDatabase',
             client: 'second',
         )]
+        private Collection $myCollection,
+    ) {}
+}
+```
+
+By specifiying the `default_database` option in the configuration, you can omit the `database` option in the
+`AutowireCollection` attribute:
+
+```diff
+mongodb:
+  clients:
+    default:
+      uri: '%env(MONGODB_URI)%'
++      default_database: 'myDatabase'
+```
+
+```php
+use MongoDB\Bundle\Attribute\AutowireCollection;
+use MongoDB\Collection;
+
+class MyService
+{
+    public function __construct(
+        #[AutowireCollection]
         private Collection $myCollection,
     ) {}
 }
