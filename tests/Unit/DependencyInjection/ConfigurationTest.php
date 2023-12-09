@@ -38,12 +38,12 @@ final class ConfigurationTest extends TestCase
                 [
                     'id' => 'default',
                     'uri' => 'mongodb://localhost:27017',
-                    'uriOptions' => ['readPreference' => 'primary'],
+                    'uri_options' => ['readPreference' => 'primary'],
                 ],
                 [
                     'id' => 'secondary',
                     'uri' => 'mongodb://localhost:27018',
-                    'driverOptions' => ['serverApi' => new ServerApi((string) ServerApi::V1)],
+                    'driver_options' => ['serverApi' => new ServerApi((string) ServerApi::V1)],
                 ],
             ],
         ],
@@ -58,13 +58,13 @@ final class ConfigurationTest extends TestCase
 
         $this->assertArrayHasKey('default', $clients);
         $this->assertSame('mongodb://localhost:27017', $clients['default']['uri']);
-        $this->assertSame(['readPreference' => 'primary'], $clients['default']['uriOptions']);
-        $this->assertSame([], $clients['default']['driverOptions']);
+        $this->assertSame(['readPreference' => 'primary'], $clients['default']['uri_options']);
+        $this->assertSame([], $clients['default']['driver_options']);
 
         $this->assertArrayHasKey('secondary', $clients);
         $this->assertSame('mongodb://localhost:27018', $clients['secondary']['uri']);
-        $this->assertSame([], $clients['secondary']['uriOptions']);
-        $this->assertEquals(['serverApi' => new ServerApi((string) ServerApi::V1)], $clients['secondary']['driverOptions']);
+        $this->assertSame([], $clients['secondary']['uri_options']);
+        $this->assertEquals(['serverApi' => new ServerApi((string) ServerApi::V1)], $clients['secondary']['driver_options']);
     }
 
     public function testProcessWithYamlFile(): void
@@ -74,11 +74,11 @@ default_client: default
 clients:
     default:
         uri: mongodb://localhost:27017
-        uriOptions:
+        uri_options:
             readPreference: primary
     secondary:
         uri: mongodb://localhost:27018
-        driverOptions:
+        driver_options:
             serverApi: v1
 YAML);
 
@@ -91,13 +91,13 @@ YAML);
 
         $this->assertArrayHasKey('default', $clients);
         $this->assertSame('mongodb://localhost:27017', $clients['default']['uri']);
-        $this->assertSame(['readPreference' => 'primary'], $clients['default']['uriOptions']);
-        $this->assertSame([], $clients['default']['driverOptions']);
+        $this->assertSame(['readPreference' => 'primary'], $clients['default']['uri_options']);
+        $this->assertSame([], $clients['default']['driver_options']);
 
         $this->assertArrayHasKey('secondary', $clients);
         $this->assertSame('mongodb://localhost:27018', $clients['secondary']['uri']);
-        $this->assertSame([], $clients['secondary']['uriOptions']);
-        $this->assertSame(['serverApi' => 'v1'], $clients['secondary']['driverOptions']);
+        $this->assertSame([], $clients['secondary']['uri_options']);
+        $this->assertSame(['serverApi' => 'v1'], $clients['secondary']['driver_options']);
     }
 
     public function testProcessWithYamlFileWithoutUriKey(): void

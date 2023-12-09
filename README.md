@@ -55,11 +55,11 @@ mongodb:
   clients:
     default:
       uri: '%env(MONGODB_URI)%'
-      uriOptions: #...
-      driverOptions: #...
+      uri_options: #...
+      driver_options: #...
 ```
 
-The `uriOptions` and `driverOptions` are passed directly to the underlying MongoDB driver.
+The `uri_options` and `driver_options` are passed directly to the underlying MongoDB driver.
 See the [documentation](https://www.php.net/manual/en/mongodb-driver-manager.construct.php) for available options.
 
 If you want to configure multiple clients, you can do so by adding additional clients to the configuration:
