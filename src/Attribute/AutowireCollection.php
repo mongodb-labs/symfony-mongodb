@@ -23,6 +23,7 @@ namespace MongoDB\Bundle\Attribute;
 use Attribute;
 use MongoDB\Bundle\DependencyInjection\MongoDBExtension;
 use MongoDB\Client;
+use MongoDB\Codec\DocumentCodec;
 use MongoDB\Collection;
 use ReflectionParameter;
 use Symfony\Component\DependencyInjection\Attribute\AutowireCallable;
@@ -45,6 +46,7 @@ final class AutowireCollection extends AutowireCallable
         private readonly ?string $collection = null,
         private readonly ?string $database = null,
         ?string $client = null,
+        private readonly string|DocumentCodec|null $codec = null,
         private readonly array $options = [],
         bool|string $lazy = false,
     ) {
@@ -61,6 +63,10 @@ final class AutowireCollection extends AutowireCallable
     public function buildDefinition(mixed $value, ?string $type, ReflectionParameter $parameter): Definition
     {
         $options = $this->options;
+        if ($this->codec !== null) {
+            $options['codec'] = $this->codec;
+        }
+
         if (isset($options['codec']) && is_string($options['codec'])) {
             $options['codec'] = new Reference(ltrim($options['codec'], '@'));
         }
