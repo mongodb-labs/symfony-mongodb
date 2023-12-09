@@ -128,7 +128,7 @@ class MyService
 }
 ```
 
-## Database and Collection Usage
+## Database Usage
 
 The client service provides access to databases and collections. You can access a database by calling the
 `selectDatabase` method, passing the database name and potential options:
@@ -182,6 +182,8 @@ class MyService
     ) {}
 }
 ```
+
+## Collection Usage
 
 To inject a collection, you can either call the `selectCollection` method on a `Client` or `Database` instance.
 For convenience, the `#[AutowireCollection]` attribute provides a quicker alternative:
@@ -257,6 +259,25 @@ class MyService
 {
     public function __construct(
         #[AutowireCollection]
+        private Collection $myCollection,
+    ) {}
+}
+```
+
+### Using a Codec
+
+To use a custom codec for a collection, you can specify the `codec` option in the `AutowireCollection` attribute. The
+codec class must implement the `MongoDB\Codec\DocumentCodec` interface. You can either pass an instance of the selected
+codec, or pass a service reference to the codec:
+
+```php
+use MongoDB\Bundle\Attribute\AutowireCollection;
+use MongoDB\Collection;
+
+class MyService
+{
+    public function __construct(
+        #[AutowireCollection(codec: MyCodec::class)]
         private Collection $myCollection,
     ) {}
 }
