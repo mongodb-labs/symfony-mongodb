@@ -97,7 +97,8 @@ class MyService
 }
 ```
 
-If you register multiple clients, you can autowire them by name + `Client` suffix:
+If you register multiple clients, you can autowire them by using the client name with a `Client` suffix as parameter
+name:
 
 ```php
 use MongoDB\Bundle\Attribute\AutowireClient;
@@ -106,6 +107,7 @@ use MongoDB\Client;
 class MyService
 {
     public function __construct(
+        // Will autowire the client with the id "second"
         private Client $secondClient,
     ) {}
 }
@@ -120,7 +122,7 @@ use MongoDB\Client;
 class MyService
 {
     public function __construct(
-       #[AutowireClient('second')]
+        #[AutowireClient('second')]
         private Client $client,
     ) {}
 }
@@ -128,8 +130,8 @@ class MyService
 
 ## Database and Collection Usage
 
-The client service provides access to databases and collections. You can access a database by calling the `selectDatabase`
-method, passing the database name and potential options:
+The client service provides access to databases and collections. You can access a database by calling the
+`selectDatabase` method, passing the database name and potential options:
 
 ```php
 use MongoDB\Client;
@@ -162,21 +164,9 @@ class MyService
 }
 ```
 
-You can also omit the `database` option if the property name matches the database name.
-In the following example the database name is `myDatabase`, inferred from the property name:
-
-```php
-use MongoDB\Bundle\Attribute\AutowireCollection;
-use MongoDB\Database;
-
-class MyService
-{
-    public function __construct(
-        #[AutowireDatabase]
-        private Database $myDatabase,
-    ) {}
-}
-```
+If you don't specify a database name in the attribute, the default database name (specified in the `default_database`
+configuration option) will be used. If you did not define a default database, the database name has to be specified in
+the attribute.
 
 If you have more than one client defined, you can also reference the client:
 
@@ -248,14 +238,15 @@ class MyService
 }
 ```
 
-By specifiying the `default_database` option in the configuration, you can omit the `database` option in the attribute:
+By specifiying the `default_database` option in the configuration, you can omit the `database` option in the
+`AutowireCollection` attribute:
 
 ```diff
 mongodb:
   clients:
     default:
       uri: '%env(MONGODB_URI)%'
-+      default_database: 'myDtabase'
++      default_database: 'myDatabase'
 ```
 
 ```php
