@@ -128,7 +128,7 @@ class MyService
 }
 ```
 
-## Database and Collection Usage
+## Database Usage
 
 The client service provides access to databases and collections. You can access a database by calling the
 `selectDatabase` method, passing the database name and potential options:
@@ -182,6 +182,8 @@ class MyService
     ) {}
 }
 ```
+
+## Collection Usage
 
 To inject a collection, you can either call the `selectCollection` method on a `Client` or `Database` instance.
 For convenience, the `#[AutowireCollection]` attribute provides a quicker alternative:
@@ -257,6 +259,33 @@ class MyService
 {
     public function __construct(
         #[AutowireCollection]
+        private Collection $myCollection,
+    ) {}
+}
+```
+
+## Specifying options
+
+When using the `AutowireDatabase` or `AutowireCollection` attributes, you can specify additional options for the
+resulting instances. You can pass the following options:
+|| Option || Accepted type ||
+| `codec` | `DocumentCodec` instance |
+| `typeMap`| `array` containing type map information |
+| `readPreference` | `MongoDB\Driver\ReadPreference` instance |
+| `writeConcern` | `MongoDB\Driver\writeConcern` instance |
+| `readConcern` | `MongoDB\Driver\ReadConcern` instance |
+
+In addition to passing an instance, you can also pass a service reference by specifying a string for the given option:
+
+```php
+use MongoDB\Bundle\Attribute\AutowireCollection;
+use MongoDB\Collection;
+use MongoDB\Driver\ReadPreference;
+
+class MyService
+{
+    public function __construct(
+        #[AutowireCollection(codec: Codec::class, readPreference: new ReadPreference('secondary'))]
         private Collection $myCollection,
     ) {}
 }

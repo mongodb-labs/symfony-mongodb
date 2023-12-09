@@ -22,13 +22,13 @@ namespace MongoDB\Bundle\Tests\Unit\Attribute;
 
 use MongoDB\Bundle\Attribute\AutowireDatabase;
 use MongoDB\Client;
+use MongoDB\Collection;
 use MongoDB\Database;
-use PHPUnit\Framework\TestCase;
 use ReflectionParameter;
 use Symfony\Component\DependencyInjection\Reference;
 
 /** @covers \MongoDB\Bundle\Attribute\AutowireDatabase */
-final class AutowireDatabaseTest extends TestCase
+final class AutowireDatabaseTest extends AttributeTestCase
 {
     public function testMinimal(): void
     {
@@ -56,7 +56,6 @@ final class AutowireDatabaseTest extends TestCase
         $autowire = new AutowireDatabase(
             database: 'mydb',
             client: 'default',
-            options: ['foo' => 'bar'],
         );
 
         $this->assertEquals([new Reference('mongodb.client.default'), 'selectDatabase'], $autowire->value);
@@ -74,14 +73,13 @@ final class AutowireDatabaseTest extends TestCase
         $this->assertSame(Database::class, $definition->getClass());
         $this->assertEquals($autowire->value, $definition->getFactory());
         $this->assertSame('mydb', $definition->getArgument(0));
-        $this->assertSame(['foo' => 'bar'], $definition->getArgument(1));
+        $this->assertSame([], $definition->getArgument(1));
     }
 
     public function testWithoutDatabase(): void
     {
         $autowire = new AutowireDatabase(
             client: 'default',
-            options: ['foo' => 'bar'],
         );
 
         $this->assertEquals([new Reference('mongodb.client.default'), 'selectDatabase'], $autowire->value);
@@ -99,6 +97,27 @@ final class AutowireDatabaseTest extends TestCase
         $this->assertSame(Database::class, $definition->getClass());
         $this->assertEquals($autowire->value, $definition->getFactory());
         $this->assertSame('%mongodb.client.default.default_database%', $definition->getArgument(0));
-        $this->assertSame(['foo' => 'bar'], $definition->getArgument(1));
+        $this->assertSame([], $definition->getArgument(1));
+    }
+
+    /** @dataProvider provideOptions */
+    public function testWithOptions(array $attributeArguments, array $expectedOptions): void
+    {
+        $autowire = new AutowireDatabase(
+            ...$attributeArguments,
+            client: 'default',
+        );
+
+        $definition = $autowire->buildDefinition(
+            value: $autowire->value,
+            type: Collection::class,
+            parameter: new ReflectionParameter(
+                static function (Database $database): void {
+                },
+                'database',
+            ),
+        );
+
+        $this->assertEquals($expectedOptions, $definition->getArgument(1));
     }
 }
