@@ -46,7 +46,6 @@ abstract class AttributeTestCase extends TestCase
 
         $options = [
             'codec' => $codec,
-            'typeMap' => ['root' => 'array'],
             'writeConcern' => new WriteConcern(0),
             'readConcern' => new ReadConcern('majority'),
             'readPreference' => new ReadPreference('primary'),
@@ -68,5 +67,21 @@ abstract class AttributeTestCase extends TestCase
                 'expectedOptions' => [$option => new Reference(sprintf('%s_service', $option))],
             ];
         }
+
+        // Type map
+        yield 'typeMap option: null' => [
+            'attributeArguments' => ['typeMap' => null],
+            'expectedOptions' => [],
+        ];
+
+        yield 'typeMap option: value' => [
+            'attributeArguments' => ['typeMap' => ['root' => 'bson']],
+            'expectedOptions' => ['typeMap' => ['root' => 'bson']],
+        ];
+
+        yield 'typeMap option: parameter' => [
+            'attributeArguments' => ['typeMap' => 'default_typeMap'],
+            'expectedOptions' => ['typeMap' => '%default_typeMap%'],
+        ];
     }
 }

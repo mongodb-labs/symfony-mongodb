@@ -68,9 +68,17 @@ final class AutowireDatabase extends AutowireCallable
     {
         $options = [];
         foreach (['codec', 'typeMap', 'readPreference', 'writeConcern', 'readConcern'] as $option) {
-            if ($this->$option !== null) {
-                $options[$option] = is_string($this->$option) ? new Reference($this->$option) : $this->$option;
+            $optionValue = $this->$option;
+            if ($optionValue === null) {
+                continue;
             }
+
+            // If a string was given, it may be a service ID or parameter. Handle it accordingly
+            if (is_string($optionValue)) {
+                $optionValue = $option === 'typeMap' ? sprintf('%%%s%%', $optionValue) : new Reference($optionValue);
+            }
+
+            $options[$option] = $optionValue;
         }
 
         return (new Definition(is_string($this->lazy) ? $this->lazy : ($type ?: Database::class)))
