@@ -78,6 +78,7 @@ final class MongoDBExtension extends Extension
 
             // Allows to autowire the client using the name
             $container->registerAliasForArgument($serviceId, Client::class, sprintf('%sClient', $client));
+            $container->registerAliasForArgument($serviceId, Client::class, $client);
         }
 
         // Register an autowiring alias for the default client

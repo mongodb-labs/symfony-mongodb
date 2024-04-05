@@ -128,6 +128,21 @@ class MyService
 }
 ```
 
+You can also use the `#[Target]` attribute:
+
+```php
+use MongoDB\Client;
+use Symfony\Component\DependencyInjection\Attribute\Target;
+
+class MyService
+{
+    public function __construct(
+        #[Target('second')]
+        private Client $client,
+    ) {}
+}
+```
+
 ## Database Usage
 
 The client service provides access to databases and collections. You can access a database by calling the
