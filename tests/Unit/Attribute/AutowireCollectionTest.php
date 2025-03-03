@@ -35,7 +35,7 @@ final class AutowireCollectionTest extends AttributeTestCase
     {
         $autowire = new AutowireCollection();
 
-        $this->assertEquals([new Reference($client = Client::class), 'selectCollection'], $autowire->value);
+        $this->assertEquals([new Reference($client = Client::class), 'getCollection'], $autowire->value);
 
         $definition = $autowire->buildDefinition(
             value: $autowire->value,
@@ -62,7 +62,7 @@ final class AutowireCollectionTest extends AttributeTestCase
             client: 'default',
         );
 
-        $this->assertEquals([new Reference('mongodb.client.default'), 'selectCollection'], $autowire->value);
+        $this->assertEquals([new Reference('mongodb.client.default'), 'getCollection'], $autowire->value);
 
         $definition = $autowire->buildDefinition(
             value: $autowire->value,
@@ -88,7 +88,7 @@ final class AutowireCollectionTest extends AttributeTestCase
             client: 'default',
         );
 
-        $this->assertEquals([new Reference('mongodb.client.default'), 'selectCollection'], $autowire->value);
+        $this->assertEquals([new Reference('mongodb.client.default'), 'getCollection'], $autowire->value);
 
         $definition = $autowire->buildDefinition(
             value: $autowire->value,
