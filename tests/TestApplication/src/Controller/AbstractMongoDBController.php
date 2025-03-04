@@ -67,11 +67,11 @@ abstract class AbstractMongoDBController extends AbstractController
 
         assert($database !== null);
 
-        $db = $client->selectDatabase($database);
+        $db = $client->getDatabase($database);
         $db->drop();
 
         if (! $collection instanceof Collection) {
-            $collection = $db->selectCollection($collection);
+            $collection = $db->getCollection($collection);
         }
 
         $collection->insertOne(['foo' => 'bar']);
@@ -80,7 +80,7 @@ abstract class AbstractMongoDBController extends AbstractController
     final public function insertDocumentForDatabase(Database $database, string $collection): void
     {
         $database->drop();
-        $collection = $database->selectCollection($collection);
+        $collection = $database->getCollection($collection);
         $collection->insertOne(['foo' => 'bar']);
     }
 

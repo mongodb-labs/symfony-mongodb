@@ -59,7 +59,7 @@ final class AutowireDatabase extends AutowireCallable
             : MongoDBExtension::createClientServiceId($client);
 
         parent::__construct(
-            callable: [new Reference($this->serviceId), 'selectDatabase'],
+            callable: [new Reference($this->serviceId), 'getDatabase'],
             lazy: $lazy,
         );
     }

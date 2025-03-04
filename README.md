@@ -131,7 +131,7 @@ class MyService
 ## Database Usage
 
 The client service provides access to databases and collections. You can access a database by calling the
-`selectDatabase` method, passing the database name and potential options:
+`getDatabase` method, passing the database name and potential options:
 
 ```php
 use MongoDB\Client;
@@ -144,7 +144,7 @@ class MyService
     public function __construct(
         Client $client,
     ) {
-        $this->database = $client->selectDatabase('myDatabase');
+        $this->database = $client->getDatabase('myDatabase');
     }
 }
 ```
@@ -185,7 +185,7 @@ class MyService
 
 ## Collection Usage
 
-To inject a collection, you can either call the `selectCollection` method on a `Client` or `Database` instance.
+To inject a collection, you can either call the `getCollection` method on a `Client` or `Database` instance.
 For convenience, the `#[AutowireCollection]` attribute provides a quicker alternative:
 
 ```php

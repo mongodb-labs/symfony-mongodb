@@ -68,9 +68,9 @@ class FunctionalTestCase extends WebTestCase
     {
         $client = self::getContainer()->get(MongoDBExtension::createClientServiceId($clientId));
         assert($client instanceof Client);
-        $db = $client->selectDatabase($database);
+        $db = $client->getDatabase($database);
         assert($db instanceof Database);
-        $collection = $db->selectCollection($collection);
+        $collection = $db->getCollection($collection);
         assert($collection instanceof Collection);
 
         $this->assertSame($expected, $collection->countDocuments());
@@ -80,7 +80,7 @@ class FunctionalTestCase extends WebTestCase
     {
         $client = self::getContainer()->get(MongoDBExtension::createClientServiceId($clientId));
         assert($client instanceof Client);
-        $db = $client->selectDatabase($database);
+        $db = $client->getDatabase($database);
         assert($db instanceof Database);
         $db->drop();
     }

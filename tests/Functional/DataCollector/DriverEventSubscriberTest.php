@@ -36,7 +36,7 @@ class DriverEventSubscriberTest extends TestCase
 
     public function testCommandSucceeded(): void
     {
-        $this->getClient()->selectCollection('database1', 'collection1')->find();
+        $this->getClient()->getCollection('database1', 'collection1')->find();
 
         // The 2 events are commandStarted and commandSucceeded
         $this->assertCount(2, $this->collector->events);

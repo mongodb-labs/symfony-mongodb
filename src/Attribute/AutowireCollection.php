@@ -61,7 +61,7 @@ final class AutowireCollection extends AutowireCallable
             : MongoDBExtension::createClientServiceId($client);
 
         parent::__construct(
-            callable: [new Reference($this->serviceId), 'selectCollection'],
+            callable: [new Reference($this->serviceId), 'getCollection'],
             lazy: $lazy,
         );
     }
