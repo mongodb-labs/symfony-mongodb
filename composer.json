@@ -19,7 +19,7 @@
         "symfony/console": "^6.3 || ^7.0",
         "symfony/dependency-injection": "^6.3.5 || ^7.0",
         "symfony/http-kernel": "^6.3.5 || ^7.0",
-        "symfony/runtime": "^6.3 || ^7.0"
+        "symfony/runtime": "^6.4.14 || ^7.1.7"
     },
     "require-dev": {
         "doctrine/coding-standard": "^12.0",
