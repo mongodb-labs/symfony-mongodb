@@ -83,7 +83,7 @@ final class MongoDBDataCollector extends DataCollector implements LateDataCollec
                     (array) $client->getManager()->executeCommand('admin', new Command(['buildInfo' => 1]))->toArray()[0],
                     ['versionArray' => 0, 'ok' => 0],
                 ),
-                'clientInfo' => array_diff_key($client->__debugInfo(), ['manager' => 0]),
+                'clientInfo' => array_diff_key($client->__debugInfo(), ['manager' => 0, 'builderEncoder' => 0]),
             ];
         }
 

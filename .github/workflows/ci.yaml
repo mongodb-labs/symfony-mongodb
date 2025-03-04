@@ -18,14 +18,14 @@ jobs:
 
         services:
             mongodb_primary:
-                image: mongo:7-jammy
+                image: mongo:8
                 env:
                     MONGO_INITDB_ROOT_USERNAME: "primary"
                     MONGO_INITDB_ROOT_PASSWORD: "password"
                 ports:
                     - "27017:27017"
             mongodb_secondary:
-                image: mongo:7-jammy
+                image: mongo:8
                 env:
                     MONGO_INITDB_ROOT_USERNAME: "secondary"
                     MONGO_INITDB_ROOT_PASSWORD: "password"
@@ -45,6 +45,7 @@ jobs:
                     - '8.1'
                     - '8.2'
                     - '8.3'
+                    - '8.4'
                 dependencies:
                     - 'highest'
                     - 'lowest'
@@ -79,7 +80,7 @@ jobs:
               run: composer require ${{ matrix.variant }} --no-update
 
             - name: Install Composer dependencies (${{ matrix.dependencies }})
-              uses: ramsey/composer-install@v2
+              uses: ramsey/composer-install@v3
               with:
                   dependency-versions: ${{ matrix.dependencies }}
 

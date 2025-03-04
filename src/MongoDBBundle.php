@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace MongoDB\Bundle;
 
+use MongoDB\Bundle\DependencyInjection\Compiler\DataCollectorPass;
 use MongoDB\Bundle\DependencyInjection\MongoDBExtension;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
@@ -34,6 +35,6 @@ final class MongoDBBundle extends AbstractBundle
 
     public function build(ContainerBuilder $container): void
     {
-        $container->addCompilerPass(new DependencyInjection\Compiler\DataCollectorPass());
+        $container->addCompilerPass(new DataCollectorPass());
     }
 }
