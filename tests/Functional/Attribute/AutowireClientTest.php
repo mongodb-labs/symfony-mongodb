@@ -53,6 +53,9 @@ final class AutowireClientTest extends FunctionalTestCase
 
         /** @see AutowireClientController::viaNamedClient() */
         yield 'via-named-client' => ['/autowire-client/via-named-client', self::CLIENT_ID_SECONDARY, self::DB_CUSTOMER_GOOGLE, self::COLLECTION_USERS];
+
+        /** @see AutowireClientController::viaTarget() */
+        yield 'via-target' => ['/autowire-client/via-target', self::CLIENT_ID_SECONDARY, self::DB_CUSTOMER_GOOGLE, self::COLLECTION_USERS];
     }
 
     /**

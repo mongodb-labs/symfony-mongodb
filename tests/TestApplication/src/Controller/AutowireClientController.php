@@ -24,6 +24,7 @@ use MongoDB\Bundle\Attribute\AutowireClient;
 use MongoDB\Bundle\Tests\Functional\Attribute\AutowireClientTest;
 use MongoDB\Bundle\Tests\Functional\FunctionalTestCase;
 use MongoDB\Client;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -65,6 +66,16 @@ final class AutowireClientController extends AbstractMongoDBController
         Client $secondaryClient,
     ): JsonResponse {
         $this->insertDocumentForClient($secondaryClient, FunctionalTestCase::DB_CUSTOMER_GOOGLE, FunctionalTestCase::COLLECTION_USERS);
+
+        return new JsonResponse();
+    }
+
+    #[Route('/via-target')]
+    public function viaTarget(
+        #[Target('secondary')]
+        Client $client,
+    ): JsonResponse {
+        $this->insertDocumentForClient($client, FunctionalTestCase::DB_CUSTOMER_GOOGLE, FunctionalTestCase::COLLECTION_USERS);
 
         return new JsonResponse();
     }
