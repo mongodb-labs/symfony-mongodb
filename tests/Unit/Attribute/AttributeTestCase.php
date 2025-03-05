@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MongoDB\Bundle\Tests\Unit\Attribute;
 
 use Generator;

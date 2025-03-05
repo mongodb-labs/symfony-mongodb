@@ -34,7 +34,6 @@ use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
 use function is_string;
-use function ltrim;
 use function sprintf;
 
 /**

@@ -31,7 +31,7 @@ class DriverEventSubscriberTest extends TestCase
             }
         };
 
-        $this->stopwatch = new Stopwatch();;
+        $this->stopwatch = new Stopwatch();
     }
 
     public function testCommandSucceeded(): void
