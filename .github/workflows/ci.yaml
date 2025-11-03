@@ -58,6 +58,7 @@ jobs:
                     - 'symfony/symfony:"6.3.*"'
                     - 'symfony/symfony:"6.4.*"'
                     - 'symfony/symfony:"7.0.*"'
+                    - 'symfony/symfony:"8.0.*"'
                 include:
                     - php-version: '8.4'
                       driver-version: 'mongodb/mongo-php-driver@v2.x'
