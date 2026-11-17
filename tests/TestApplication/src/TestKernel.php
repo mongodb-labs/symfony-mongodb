@@ -23,6 +23,8 @@ namespace MongoDB\Bundle\Tests\TestApplication;
 use MongoDB\Bundle\MongoDBBundle;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
+use Symfony\Bundle\TwigBundle\TwigBundle;
+use Symfony\Bundle\WebProfilerBundle\WebProfilerBundle;
 use Symfony\Component\HttpKernel\Kernel;
 
 use function dirname;
@@ -41,6 +43,8 @@ final class TestKernel extends Kernel
     {
         return [
             new FrameworkBundle(),
+            new TwigBundle(),
+            new WebProfilerBundle(),
             new MongoDBBundle(),
         ];
     }

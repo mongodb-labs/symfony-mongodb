@@ -20,6 +20,10 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
+use Symfony\Bridge\Twig\Extension\DumpExtension;
+use Symfony\Component\VarDumper\Cloner\VarCloner;
+use Symfony\Component\VarDumper\Dumper\HtmlDumper;
+
 return static function (ContainerConfigurator $container): void {
     $services = $container->services()
         ->defaults()
@@ -31,4 +35,9 @@ return static function (ContainerConfigurator $container): void {
 
     $services->load('MongoDB\\Bundle\\Tests\\TestApplication\\Controller\\', '../src/Controller/')
         ->tag('controller.service_arguments');
+
+    // The "dump" Twig function is normally registered by the DebugBundle
+    $services->set(DumpExtension::class)
+        ->args([inline_service(VarCloner::class), inline_service(HtmlDumper::class)])
+        ->tag('twig.extension');
 };

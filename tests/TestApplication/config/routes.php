@@ -19,8 +19,15 @@ declare(strict_types=1);
  */
 
 use MongoDB\Bundle\Tests\TestApplication\TestKernel;
+use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
 
 return static function (RoutingConfigurator $routes): void {
     $routes->import('../src/Controller/', TestKernel::MAJOR_VERSION >= 7 ? 'attribute' : 'annotation');
+
+    // WebProfilerBundle uses XML routing before Symfony 7.3 and PHP routing after
+    $routingFormat = Kernel::VERSION_ID >= 70300 ? 'php' : 'xml';
+
+    $routes->import('@WebProfilerBundle/Resources/config/routing/wdt.' . $routingFormat)->prefix('/_wdt');
+    $routes->import('@WebProfilerBundle/Resources/config/routing/profiler.' . $routingFormat)->prefix('/_profiler');
 };
