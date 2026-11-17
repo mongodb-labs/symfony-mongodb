@@ -26,7 +26,7 @@ use MongoDB\Bundle\Tests\Functional\Attribute\AutowireDatabaseTest;
 use MongoDB\Bundle\Tests\Functional\FunctionalTestCase;
 use MongoDB\Database;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /** @see AutowireDatabaseTest */
 #[Route('/autowire-database')]

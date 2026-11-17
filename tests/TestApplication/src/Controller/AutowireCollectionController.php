@@ -25,7 +25,7 @@ use MongoDB\Bundle\Tests\Functional\Attribute\AutowireCollectionTest;
 use MongoDB\Bundle\Tests\Functional\FunctionalTestCase;
 use MongoDB\Collection;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /** @see AutowireCollectionTest */
 #[Route('/autowire-collection')]

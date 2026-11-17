@@ -12,7 +12,7 @@ permissions:
 
 jobs:
     test:
-        name: PHP ${{ matrix.php-version }} + ${{ matrix.driver-version }} + ${{ matrix.dependencies }} + ${{ matrix.variant }}
+        name: PHP ${{ matrix.php-version }} + ${{ matrix.dependencies || 'highest' }} + Symfony ${{ matrix.symfony-require }}
 
         runs-on: ubuntu-latest
 
@@ -46,24 +46,38 @@ jobs:
                     - '8.2'
                     - '8.3'
                     - '8.4'
-                driver-version:
-                    - 'stable'
+                    - '8.5'
+                    - '8.6'
+                symfony-require:
+                    - '7.4.*'
                 dependencies:
                     - 'highest'
                     - 'lowest'
-                symfony-require:
-                    - ''
-                variant:
-                    - 'normal'
-                    - 'symfony/symfony:"6.3.*"'
-                    - 'symfony/symfony:"6.4.*"'
-                    - 'symfony/symfony:"7.0.*"'
+                exclude:
+                    # Symfony 7.4 requires PHP 8.2 or later
+                    - php-version: '8.1'
+                      symfony-require: '7.4.*'
                 include:
-                    - php-version: '8.4'
-                      driver-version: 'mongodb/mongo-php-driver@v2.x'
-                      dependencies: 'highest'
-                      symfony-require: ''
-                      variant: 'normal'
+                    # PHP 8.1 is tested with Symfony 6.4
+                    - php-version: '8.1'
+                      symfony-require: '6.4.*'
+                    - php-version: '8.1'
+                      symfony-require: '6.4.*'
+                      dependencies: 'lowest'
+
+                    # Every supported Symfony version is tested with PHP 8.5
+                    - php-version: '8.5'
+                      symfony-require: '6.4.*'
+                    - php-version: '8.5'
+                      symfony-require: '6.4.*'
+                      dependencies: 'lowest'
+                    - php-version: '8.5'
+                      symfony-require: '8.1.*'
+                    - php-version: '8.5'
+                      symfony-require: '8.1.*'
+                      dependencies: 'lowest'
+                    - php-version: '8.5'
+                      symfony-require: '^8@dev'
 
         steps:
             - name: Checkout
@@ -73,25 +87,20 @@ jobs:
               uses: shivammathur/setup-php@v2
               with:
                   php-version: ${{ matrix.php-version }}
-                  extensions: "mongodb-${{ matrix.driver-version }}"
+                  extensions: mongodb
+                  tools: flex
 
             - name: Add PHPUnit matcher
               run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
 
-            - name: Globally install symfony/flex
-              if: matrix.symfony-require != ''
-              run: |
-                  composer global config --no-plugins allow-plugins.symfony/flex true
-                  composer global require --no-progress --no-scripts --no-plugins symfony/flex
+            - name: Allow development dependencies
+              if: matrix.symfony-require == '^8@dev'
+              run: composer config minimum-stability dev
 
-            - name: Install variant
-              if: matrix.variant != 'normal' && !startsWith(matrix.variant, 'symfony/symfony')
-              run: composer require ${{ matrix.variant }} --no-update
-
-            - name: Install Composer dependencies (${{ matrix.dependencies }})
+            - name: Install Composer dependencies (${{ matrix.dependencies || 'highest' }})
               uses: ramsey/composer-install@v3
               with:
-                  dependency-versions: ${{ matrix.dependencies }}
+                  dependency-versions: ${{ matrix.dependencies || 'highest' }}
 
             - name: Run Tests
               run: vendor/bin/simple-phpunit --configuration=phpunit.xml.dist

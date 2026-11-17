@@ -57,17 +57,4 @@ final class AutowireClientTest extends FunctionalTestCase
         /** @see AutowireClientController::viaTarget() */
         yield 'via-target' => ['/autowire-client/via-target', self::CLIENT_ID_SECONDARY, self::DB_CUSTOMER_GOOGLE, self::COLLECTION_USERS];
     }
-
-    /**
-     * @see AutowireClientController::withUnknownClient()
-     *
-     * @testdox Uses #[AutowireClient] attribute with an unknown client.
-     */
-    public function testWithUnknownClient(): void
-    {
-        $this->browser()
-            ->catchExceptions()
-            ->get('/autowire-client/with-unknown-client')
-            ->assertStatus(500);
-    }
 }

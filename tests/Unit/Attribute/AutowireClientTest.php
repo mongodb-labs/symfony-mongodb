@@ -21,8 +21,11 @@ declare(strict_types=1);
 namespace MongoDB\Bundle\Tests\Unit\Attribute;
 
 use MongoDB\Bundle\Attribute\AutowireClient;
+use MongoDB\Bundle\Tests\Unit\Attribute\Fixture\ServiceWithUnknownClient;
 use MongoDB\Client;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
 use Symfony\Component\DependencyInjection\Reference;
 
 /** @covers \MongoDB\Bundle\Attribute\AutowireClient */
@@ -40,5 +43,18 @@ final class AutowireClientTest extends TestCase
         $autowire = new AutowireClient('foobar');
 
         $this->assertEquals(new Reference('mongodb.client.foobar'), $autowire->value);
+    }
+
+    public function testUnknownClientIsReportedWhenCompilingTheContainer(): void
+    {
+        $container = new ContainerBuilder();
+        $container->register('service', ServiceWithUnknownClient::class)
+            ->setAutowired(true)
+            ->setPublic(true);
+
+        $this->expectException(ServiceNotFoundException::class);
+        $this->expectExceptionMessage('The service "service" has a dependency on a non-existent service "mongodb.client.foo-bar-baz".');
+
+        $container->compile();
     }
 }
