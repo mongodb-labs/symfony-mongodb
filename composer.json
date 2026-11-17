@@ -11,7 +11,6 @@
         { "name": "Jérôme Tamarelle", "email": "jerome.tamarelle@mongodb.com" },
         { "name": "Oskar Stark", "email": "oskarstark@googlemail.com" }
     ],
-    "minimum-stability": "dev",
     "require": {
         "php": ">=8.1",
         "ext-mongodb": "^1.21 || ^2.0",
