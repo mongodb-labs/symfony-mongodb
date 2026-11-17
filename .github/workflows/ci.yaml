@@ -12,7 +12,7 @@ permissions:
 
 jobs:
     test:
-        name: PHP ${{ matrix.php-version }} + ${{ matrix.driver-version }} + ${{ matrix.dependencies }} + Symfony ${{ matrix.symfony-require || 'latest' }}
+        name: PHP ${{ matrix.php-version }} + ${{ matrix.driver-version || 'stable' }} + ${{ matrix.dependencies || 'highest' }} + Symfony ${{ matrix.symfony-require }}
 
         runs-on: ubuntu-latest
 
@@ -46,33 +46,45 @@ jobs:
                     - '8.2'
                     - '8.3'
                     - '8.4'
+                    - '8.5'
+                    - '8.6'
+                symfony-require:
+                    - '7.4.*'
                 driver-version:
                     - 'stable'
                 dependencies:
                     - 'highest'
                     - 'lowest'
-                symfony-require:
-                    - ''
-                    - '6.3.*'
-                    - '6.4.*'
-                    - '7.0.*'
-                    - '8.0.*'
                 exclude:
-                    # Symfony 7 requires PHP 8.2 or later
+                    # Symfony 7.4 requires PHP 8.2 or later
                     - php-version: '8.1'
-                      symfony-require: '7.0.*'
-                    # Symfony 8 requires PHP 8.4 or later
-                    - php-version: '8.1'
-                      symfony-require: '8.0.*'
-                    - php-version: '8.2'
-                      symfony-require: '8.0.*'
-                    - php-version: '8.3'
-                      symfony-require: '8.0.*'
+                      symfony-require: '7.4.*'
                 include:
+                    # PHP 8.1 is tested with Symfony 6.4
+                    - php-version: '8.1'
+                      symfony-require: '6.4.*'
+                    - php-version: '8.1'
+                      symfony-require: '6.4.*'
+                      dependencies: 'lowest'
+
+                    # Every supported Symfony version is tested with PHP 8.5
+                    - php-version: '8.5'
+                      symfony-require: '6.4.*'
+                    - php-version: '8.5'
+                      symfony-require: '6.4.*'
+                      dependencies: 'lowest'
+                    - php-version: '8.5'
+                      symfony-require: '8.1.*'
+                    - php-version: '8.5'
+                      symfony-require: '8.1.*'
+                      dependencies: 'lowest'
+                    - php-version: '8.5'
+                      symfony-require: '^8@dev'
+
+                    # Test the next version of the driver
                     - php-version: '8.4'
+                      symfony-require: '7.4.*'
                       driver-version: 'mongodb/mongo-php-driver@v2.x'
-                      dependencies: 'highest'
-                      symfony-require: ''
 
         steps:
             - name: Checkout
@@ -82,21 +94,20 @@ jobs:
               uses: shivammathur/setup-php@v2
               with:
                   php-version: ${{ matrix.php-version }}
-                  extensions: "mongodb-${{ matrix.driver-version }}"
+                  extensions: "mongodb-${{ matrix.driver-version || 'stable' }}"
+                  tools: flex
 
             - name: Add PHPUnit matcher
               run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
 
-            - name: Globally install symfony/flex
-              if: matrix.symfony-require != ''
-              run: |
-                  composer global config --no-plugins allow-plugins.symfony/flex true
-                  composer global require --no-progress --no-scripts --no-plugins symfony/flex
+            - name: Allow development dependencies
+              if: matrix.symfony-require == '^8@dev'
+              run: composer config minimum-stability dev
 
-            - name: Install Composer dependencies (${{ matrix.dependencies }})
+            - name: Install Composer dependencies (${{ matrix.dependencies || 'highest' }})
               uses: ramsey/composer-install@v3
               with:
-                  dependency-versions: ${{ matrix.dependencies }}
+                  dependency-versions: ${{ matrix.dependencies || 'highest' }}
 
             - name: Run Tests
               run: vendor/bin/simple-phpunit --configuration=phpunit.xml.dist
