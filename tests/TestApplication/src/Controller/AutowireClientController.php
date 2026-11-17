@@ -26,7 +26,7 @@ use MongoDB\Bundle\Tests\Functional\FunctionalTestCase;
 use MongoDB\Client;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /** @see AutowireClientTest */
 #[Route('/autowire-client')]
@@ -77,14 +77,6 @@ final class AutowireClientController extends AbstractMongoDBController
     ): JsonResponse {
         $this->insertDocumentForClient($client, FunctionalTestCase::DB_CUSTOMER_GOOGLE, FunctionalTestCase::COLLECTION_USERS);
 
-        return new JsonResponse();
-    }
-
-    #[Route('/with-unknown-client')]
-    public function withUnknownClient(
-        #[AutowireClient(client: 'foo-bar-baz')]
-        Client $client,
-    ): JsonResponse {
         return new JsonResponse();
     }
 }
