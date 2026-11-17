@@ -26,4 +26,5 @@ $container->loadFromExtension('framework', [
         'storage_factory_id' => 'session.storage.factory.mock_file',
     ],
     'test' => true,
+    'profiler' => ['collect' => false],
 ]);

@@ -45,6 +45,10 @@
                 <span class="sf-toolbar-status {{ collector.requestCount > 50 ? 'sf-toolbar-status-yellow' : '' }}">{{ collector.requestCount }}</span>
             </div>
             <div class="sf-toolbar-info-piece">
+                <b>getMore Commands</b>
+                <span class="sf-toolbar-status {{ collector.getMoreCount > 50 ? 'sf-toolbar-status-yellow' : '' }}">{{ collector.getMoreCount }}</span>
+            </div>
+            <div class="sf-toolbar-info-piece">
                 <b>Total errors</b>
                 <span class="sf-toolbar-status {{ collector.errorCount > 0 ? 'sf-toolbar-status-red' : '' }}">{{ collector.errorCount }}</span>
             </div>
@@ -80,6 +84,11 @@
         <div class="metric">
             <span class="value">{{ collector.requestCount }}</span>
             <span class="label">Requests</span>
+        </div>
+
+        <div class="metric">
+            <span class="value">{{ collector.getMoreCount }}</span>
+            <span class="label">getMore commands</span>
         </div>
 
         <div class="metric">
@@ -132,8 +141,17 @@
                                     <td>
                                         {{ dump(request.command) }}
 
+                                        {% if request.getMoreCommands is defined %}
+                                            <div class="text-small font-normal">{{ request.getMoreCommands|length }} getMore command{{ request.getMoreCommands|length > 1 ? 's' : '' }} ({{ '%0.2f'|format(request.getMoreDurationMicros / 1000) }} ms)</div>
+                                        {% endif %}
+
                                         <div class="text-small font-normal">
                                             <a href="#" class="sf-toggle link-inverse" data-toggle-selector="#formatted-command-{{ i }}-{{ loop.parent.loop.index }}" data-toggle-alt-content="Hide formatted command">View formatted command</a>
+
+                                            {% if request.getMoreCommands is defined %}
+                                                &nbsp;&nbsp;
+                                                <a href="#" class="sf-toggle link-inverse" data-toggle-selector="#get-more-{{ i }}-{{ loop.parent.loop.index }}" data-toggle-alt-content="Hide getMore commands">View getMore commands</a>
+                                            {% endif %}
 
                                             {% if request.backtrace is defined %}
                                                 &nbsp;&nbsp;
@@ -145,6 +163,35 @@
                                             <pre style="white-space: pre-wrap">{{ request.command|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
                                             <button class="btn btn-sm label hidden" data-clipboard-text="{{ request.command|json_encode|e('html_attr') }}">Copy</button>
                                         </div>
+
+                                        {% if request.getMoreCommands is defined %}
+                                            <div id="get-more-{{ i }}-{{ loop.parent.loop.index }}" class="hidden">
+                                                <table class="alt" style="width: auto">
+                                                    <thead>
+                                                    <tr>
+                                                        <th class="nowrap">Batch</th>
+                                                        <th class="nowrap">Time</th>
+                                                        <th class="nowrap">Status</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {% for getMore in request.getMoreCommands %}
+                                                        <tr>
+                                                            <td class="nowrap">{{ loop.index }}</td>
+                                                            <td class="nowrap">{{ '%0.2f'|format(getMore.durationMicros|default(0) / 1000) }}&nbsp;ms</td>
+                                                            <td class="nowrap">
+                                                                {%- if getMore.error is defined -%}
+                                                                    <span class="text-danger" title="{{ getMore.error }}">Error</span>
+                                                                {%- else -%}
+                                                                    OK
+                                                                {%- endif -%}
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        {% endif %}
 
                                         {% if request.backtrace is defined %}
                                             <div id="backtrace-{{ i }}-{{ loop.parent.loop.index }}" class="trace-details hidden">
