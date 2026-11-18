@@ -20,11 +20,16 @@ declare(strict_types=1);
 
 namespace MongoDB\Bundle;
 
+use MongoDB\Bundle\Caster\MongoDBCaster;
 use MongoDB\Bundle\DependencyInjection\Compiler\DataCollectorPass;
 use MongoDB\Bundle\DependencyInjection\MongoDBExtension;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
+use Symfony\Component\VarDumper\Cloner\AbstractCloner;
+
+use function class_exists;
+use function method_exists;
 
 final class MongoDBBundle extends AbstractBundle
 {
@@ -36,5 +41,22 @@ final class MongoDBBundle extends AbstractBundle
     public function build(ContainerBuilder $container): void
     {
         $container->addCompilerPass(new DataCollectorPass());
+    }
+
+    public function boot(): void
+    {
+        // The VarDumper component is optional, it is not installed in production.
+        if (! class_exists(AbstractCloner::class)) {
+            return;
+        }
+
+        $casters = MongoDBCaster::getCasters();
+
+        if (method_exists(AbstractCloner::class, 'addDefaultCasters')) {
+            AbstractCloner::addDefaultCasters($casters);
+        } else {
+            // Compatibility with Symfony < 7.4
+            AbstractCloner::$defaultCasters = [...AbstractCloner::$defaultCasters, ...$casters];
+        }
     }
 }
